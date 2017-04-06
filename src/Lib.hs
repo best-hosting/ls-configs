@@ -8,6 +8,7 @@
 
 module Lib where
 
+import Prelude hiding (FilePath)
 import qualified Data.Text as T
 import Turtle
 import qualified Data.Attoparsec.Text as A
@@ -21,7 +22,6 @@ import Control.Monad
 import Control.Monad.Except
 import qualified Data.Map.Strict as M
 import qualified Turtle.Bytes as B
-import Path
 import Control.Monad.Catch
 import Data.Maybe
 import Data.Monoid
@@ -139,17 +139,17 @@ allObsolete x       = fromMaybe [] $ do
 
 -- | Compute hash for all files in 'ConfMap'.
 compute :: forall m. Monad m =>
-           (Text -> m (Alt Maybe (Hash Computed))) -> ConfMap -> m ConfMap
+           (FilePath -> m (Alt Maybe (Hash Computed))) -> ConfMap -> m ConfMap
 compute hash z0     = M.foldrWithKey go (return z0) z0
   where
-    go :: Monad m => Text -> CInfo -> m ConfMap -> m ConfMap
+    go :: Monad m => FilePath -> CInfo -> m ConfMap -> m ConfMap
     go k x mz       = do
         z     <- mz
         Alt y <- hash k
         return (M.insert k (maybe x (\w -> setA fileHash (Just w) x) y) z)
 
 -- | Map for storing information about configs.
-type ConfMap        = M.Map Text CInfo
+type ConfMap        = M.Map FilePath CInfo
 
 
 -- * Filters.
@@ -206,15 +206,20 @@ parseCInfo          =
     addFileInfo :: (a -> Hash Loaded) -> a -> CInfo
     addFileInfo f x = modifyA loadedHashes ([f x] ++) defFileInfo
 
+parseFilePath :: A.Parser FilePath
+parseFilePath       = fromText <$> parseWord
+
 -- | Parse @dpkg-query@ output into ('FilePath', 'CInfo') pair for loading
 -- into 'ConfMap'.
-parseConf :: A.Parser (Text, CInfo)
-parseConf           = (,) <$> parseWord <*> parseCInfo
+parseConf :: A.Parser (FilePath, CInfo)
+parseConf           = (,) <$> parseFilePath <*> parseCInfo
 
 -- | Calculate md5 hash of a file.
-md5sum :: Text -> P (Alt Maybe (Hash Computed))
-md5sum x            = ignoreError $
-    inprocParse (Alt . Just . Computed <$> parseMd5) "md5sum" [x] empty
+md5sum :: FilePath -> P (Alt Maybe (Hash Computed))
+md5sum fx           = do
+    x <- liftEither (toText fx)
+    ignoreError $
+      inprocParse (Alt . Just . Computed <$> parseMd5) "md5sum" [x] empty
 
 
 -- * Main.
@@ -239,7 +244,7 @@ inprocParse p cmd args inp  = ExceptT (inprocWithErr cmd args inp) >>= parse p
 loadConfMap :: MonadIO m =>
                Shell (Either Line Line)     -- ^ Input.
             -> ConfMap                      -- ^ Add parsed values here.
-            -> A.Parser (Text, CInfo)       -- ^ Parser for input.
+            -> A.Parser (FilePath, CInfo)   -- ^ Parser for input.
             -> m ConfMap
 loadConfMap x z p   = foldIO x $
                         FoldM (\z mx -> runIO (liftEither mx >>= go z))
