@@ -183,6 +183,8 @@ missed3 :: CInfo -> Bool
 missed3 x      = let ys = allStored x <|> allObsolete x
                  in  null ys
 
+cantCompute :: CInfo -> Bool
+cantCompute     = isNothing . viewAmaybe computed
 
 -- * System.
 -- $system
@@ -270,6 +272,8 @@ main_3  = do
       mapM_ print (M.keys (M.filter obsoleter ym))
       print "Missed4:"
       mapM_ print (M.keys (M.filter missed3 ym))
+      print "Cant compute:"
+      mapM_ print (M.keys (M.filter cantCompute ym))
       {-print "\nObsolete:"
       mapM_ print (M.keys (M.filter obs xm))
       print "\nNo hash:"
