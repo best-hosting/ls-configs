@@ -2,5 +2,5 @@
 import Lib
 
 main :: IO ()
-main                = runP main_
+main                = runP main_3
 
