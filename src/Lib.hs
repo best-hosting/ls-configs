@@ -138,15 +138,20 @@ allObsolete x       = fromMaybe [] $ do
     return . catMaybes . map (viewAmaybe obsoleteH) $ ts
 
 -- | Compute hash for all files in 'ConfMap'.
-compute :: forall m. Monad m =>
-           (FilePath -> m (Alt Maybe (Hash Computed))) -> ConfMap -> m ConfMap
+compute :: forall e m. (IsString e, MonadError e m, Alternative m) =>
+           (FilePath -> m (Hash Computed)) -> ConfMap -> m ConfMap
 compute hash z0     = M.foldrWithKey go (return z0) z0
   where
-    go :: Monad m => FilePath -> CInfo -> m ConfMap -> m ConfMap
-    go k x mz       = do
-        z     <- mz
-        Alt y <- hash k
-        return (M.insert k (maybe x (\w -> setA fileHash (Just w) x) y) z)
+    go :: (IsString e, MonadError e m, Alternative m) =>
+          FilePath -> CInfo -> m ConfMap -> m ConfMap
+    go k x mz
+      | otherwise       = do
+          z  <- mz
+          x' <- upd (hash k) x
+          return (M.insert k x' z)
+    upd :: (IsString e, MonadError e m, Alternative m) =>
+           m (Hash Computed) -> CInfo -> m CInfo
+    upd mh          = modifyAA fileHash (\w -> Just <$> (liftMaybe w <|> mh) <|> return Nothing)
 
 -- | Map for storing information about configs.
 type ConfMap        = M.Map FilePath CInfo
@@ -215,11 +220,10 @@ parseConf :: A.Parser (FilePath, CInfo)
 parseConf           = (,) <$> parseFilePath <*> parseCInfo
 
 -- | Calculate md5 hash of a file.
-md5sum :: FilePath -> P (Alt Maybe (Hash Computed))
-md5sum fx           = do
-    x <- liftEither (toText fx)
-    ignoreError $
-      inprocParse (Alt . Just . Computed <$> parseMd5) "md5sum" [x] empty
+md5sum :: FilePath -> P (Hash Computed)
+md5sum xf           = do
+    x <- liftEither (toText xf)
+    inprocParse (Computed <$> parseMd5) "md5sum" [x] empty
 
 
 -- * Main.
@@ -299,6 +303,10 @@ parseString xs      = A.skipSpace *> A.string xs
 -- | Convert between different string-like error types.
 liftEither :: (Show c, IsString e, MonadError e m) => Either c a -> m a
 liftEither          = either (throwError . fromString . show) return
+
+-- | Lift 'Maybe' into 'MonadError'.
+liftMaybe :: (IsString e, MonadError e m) => Maybe a -> m a
+liftMaybe           = maybe (throwError "Nothing") return
 
 -- | Return 'mempty' instead of error.
 ignoreError :: (MonadError Line m, Monoid a, MonadIO m) => m a -> m a
