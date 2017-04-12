@@ -26,6 +26,8 @@ import Control.Monad.Catch
 import Data.Maybe
 import Data.Monoid
 import Data.Default
+import System.Posix.Files
+import qualified Filesystem.Path.CurrentOS as F
 
 import Sgf.Control.Lens
 
@@ -91,10 +93,14 @@ data CInfo          = FileInfo
                         { _fileHash     :: Maybe (Hash Computed)
                         , _loadedHashes :: [Hash Loaded]
                         }
+                    | SymLinkInfo
+                        { _target       :: Maybe FilePath }
   deriving (Show, Eq)
 -- | Default 'FileInfo' value.
 defFileInfo :: CInfo
 defFileInfo         = FileInfo {_fileHash = Nothing, _loadedHashes = []}
+defSymLinkInfo :: CInfo
+defSymLinkInfo      = SymLinkInfo {_target = Nothing}
 
 instance Monoid CInfo where
     mempty          = defFileInfo
@@ -104,10 +110,23 @@ instance Monoid CInfo where
 fileHash :: LensA CInfo (Maybe (Hash Computed))
 fileHash f z@(FileInfo {_fileHash = x})
                     = fmap (\x' -> z{_fileHash = x'}) (f x)
+fileHash _ z        = pure z
 -- | Lens from 'CInfo' to 'Loaded' file hashes.
 loadedHashes :: LensA CInfo [Hash Loaded]
 loadedHashes f z@(FileInfo {_loadedHashes = x})
                     = fmap (\x' -> z{_loadedHashes = x'}) (f x)
+loadedHashes _ z    = pure z
+symLinkTarget :: LensA CInfo (Maybe FilePath)
+symLinkTarget f z@(SymLinkInfo {_target = x})
+                    = fmap (\x' -> z{_target = x'}) (f x)
+symLinkTarget _ z   = pure z
+
+isFileInfo :: CInfo -> Bool
+isFileInfo (FileInfo _ _)       = True
+isFileInfo _                    = False
+isSymLinkInfo :: CInfo -> Bool
+isSymLinkInfo (SymLinkInfo _)   = True
+isSymLinkInfo _                 = False
 
 -- | Lens from 'CInfo' to computed 'Md5' hash.
 computed :: LensA CInfo Md5
@@ -145,6 +164,7 @@ compute hash z0     = M.foldrWithKey go (return z0) z0
     go :: (IsString e, MonadError e m, Alternative m) =>
           FilePath -> CInfo -> m ConfMap -> m ConfMap
     go k x mz
+      | isSymLinkInfo x = mz
       | otherwise       = do
           z  <- mz
           x' <- upd (hash k) x
@@ -186,10 +206,10 @@ obsoleter x    = fromMaybe False $ do
 -- | No loaded hashes.
 missed3 :: CInfo -> Bool
 missed3 x      = let ys = allStored x <|> allObsolete x
-                 in  null ys
+                 in  isFileInfo x && null ys
 
 cantCompute :: CInfo -> Bool
-cantCompute     = isNothing . viewAmaybe computed
+cantCompute x   = isFileInfo x && (isNothing . viewAmaybe computed $ x)
 
 -- * System.
 -- $system
@@ -261,9 +281,37 @@ loadConfMap x z p   = foldIO x $
       | y == ""     = return zm
       | otherwise   = parse ((\(k, w) -> M.insertWith mappend k w zm) <$> p) y
 
+lstreeNoDeref :: FilePath -> Shell FilePath
+lstreeNoDeref p     = do
+    x <- ls p
+    xs <- lstat x
+    if not (isSymbolicLink xs) && isDirectory xs
+      then return x <|> lstreeNoDeref x
+      else return x
+
+-- | Add all files from `/etc` to db.
+readEtc :: MonadIO m => Shell FilePath -> ConfMap -> m ConfMap
+readEtc x z         = foldIO x (FoldM go (return z) return)
+  where
+    go :: MonadIO m => ConfMap -> FilePath -> m ConfMap
+    go z xf         = do
+        xt <- lstat xf
+        case xt of
+          _
+            | isDirectory xt      -> return z
+            | isSymbolicLink xt   -> runIO $ do
+                x <- liftEither (toText xf)
+                -- FIXME: compare fully dereferenced links?
+                y <- liftIO $ readSymbolicLink (T.unpack x)
+                let c = setA symLinkTarget (Just $ fromText (T.pack y))
+                          defSymLinkInfo
+                return $ M.insertWith (flip const) xf c z
+            | otherwise           -> return $
+                M.insertWith (flip const) xf defFileInfo z
+
 main_3 :: P ()
 main_3  = do
-    xm <- loadConfMap storedConfs M.empty parseConf
+    xm <- loadConfMap storedConfs M.empty parseConf >>= readEtc (lstreeNoDeref "/etc")
     let --obs = any ((== Just Obsolete) . viewAmaybe hashSource)
         --noh = any (not . isJust . viewAmaybe hash2)
         --com = any ((== Just Computed) . viewAmaybe hashSource)
