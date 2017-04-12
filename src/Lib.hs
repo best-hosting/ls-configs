@@ -230,7 +230,7 @@ type P a            = ExceptT Line Shell a
 
 -- | Run 'P' monad.
 runP :: (MonadIO m, Monoid a) => P a -> m a
-runP mx             = fold (runIO mx) (Fold mappend mempty id)
+runP mx             = fold (runIO mx) (Fold (flip mappend) mempty id)
 
 -- | Parse using attoparsec 'Parser' in 'MonadError' .
 parse :: (IsString e, MonadError e m) => A.Parser a -> Line -> m a
