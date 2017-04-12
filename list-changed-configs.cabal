@@ -27,7 +27,10 @@ library
                         , exceptions
                         , transformers
                         , filepath
+                        , directory
+                        , unix
                         , data-default
+                        , system-filepath
   ghc-options:          -Wall -threaded -rtsopts -with-rtsopts=-N
   default-language:     Haskell2010
 
