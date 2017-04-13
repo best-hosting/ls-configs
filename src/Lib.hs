@@ -26,7 +26,7 @@ import Control.Monad.Catch
 import Data.Maybe
 import Data.Monoid
 import Data.Default
-import System.Posix.Files
+import qualified System.Posix.Files as F
 import qualified Filesystem.Path.CurrentOS as F
 
 import Sgf.Control.Lens
@@ -236,6 +236,14 @@ md5sum xf           = do
     x <- liftEither (toText xf)
     inprocParse (Computed <$> parseMd5) "md5sum" [x] empty
 
+-- | Read file path referenced by symbolic link.
+readSymbolicLink :: (IsString e, MonadError e m, MonadIO m) =>
+                    FilePath -> m FilePath
+readSymbolicLink xf = do
+    x <- liftEither (toText xf)
+    y <- liftIO $ F.readSymbolicLink (T.unpack x)
+    return (fromText (T.pack y))
+
 
 -- * Main.
 -- $main
@@ -295,10 +303,8 @@ readEtc x z         = foldIO x (FoldM go (return z) return)
           _
             | isDirectory xt      -> return z
             | isSymbolicLink xt   -> runIO $ do
-                x <- liftEither (toText xf)
-                y <- liftIO $ readSymbolicLink (T.unpack x)
-                let c = setA symLinkTargets (M.fromList [(0, fromText (T.pack y))])
-                          defFileInfo
+                y <- readSymbolicLink xf
+                let c = setA symLinkTargets (M.fromList [(0, y)]) defFileInfo
                 return $ M.insertWith (flip const) xf c z
             | otherwise           -> return $
                 M.insertWith (flip const) xf defFileInfo z
