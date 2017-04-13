@@ -28,6 +28,7 @@ import Data.Monoid
 import Data.Default
 import qualified System.Posix.Files as F
 import qualified Filesystem.Path.CurrentOS as F
+import qualified Options.Applicative as Opt
 
 import Sgf.Control.Lens
 
@@ -88,7 +89,7 @@ newconffileH f Newconffile
                     = pure Newconffile
 newconffileH _ z    = pure z
 
--- | Config info.
+-- | Config file info.
 data CInfo          = FileInfo
                         { _fileHash         :: Maybe (Hash Computed)
                             -- ^ Hash of file (or file pointed by symlink).
@@ -171,6 +172,12 @@ maybeUpdate l mh    = modifyAA l (\w -> Just <$> (liftMaybe w <|> mh))
 
 -- | Map for storing information about configs.
 type ConfMap        = M.Map FilePath CInfo
+
+-- | Program own config.
+data Config         = Config
+                        { dpkgOutput    :: Shell (Either Line Line)
+                        , etcPath       :: FilePath
+                        }
 
 
 -- * Filters.
@@ -309,10 +316,26 @@ readEtc x z         = foldIO x (FoldM go (return z) return)
             | otherwise           -> return $
                 M.insertWith (flip const) xf defFileInfo z
 
-main_3 :: P ()
-main_3  = do
-    xm <- readEtc (lstreeNoDeref "/etc") M.empty >>=
-          loadConfMap storedConfs parseDpkg
+opts :: Opt.Parser Config
+opts                = Config
+    <$> (   Opt.flag' (Right <$> stdin)
+            (  Opt.long "stdin"
+            <> Opt.help "Read `dpkg-query` output from stdin."
+            )
+        <|> fmap Right . input . fromString <$> Opt.strOption
+            (  Opt.long "file"
+            <> Opt.metavar "FILE"
+            <> Opt.help "Read `dpkg-query` output from file."
+            )
+        <|> pure storedConfs
+        )
+    <*> pure "/etc"
+
+work :: Config -> P ()
+work Config   { dpkgOutput = dpkg
+            , etcPath    = etc
+            }       = do
+    xm <- readEtc (lstreeNoDeref etc) M.empty >>= loadConfMap dpkg parseDpkg
     let --obs = any ((== Just Obsolete) . viewAmaybe hashSource)
         --noh = any (not . isJust . viewAmaybe hash2)
         --com = any ((== Just Computed) . viewAmaybe hashSource)
@@ -337,6 +360,13 @@ main_3  = do
       print "\nNo hash:"
       mapM_ print (M.keys (M.filter noh xm))-}
 
+main_3 :: P ()
+main_3              =
+    join . liftIO . Opt.execParser
+        $ Opt.info (work <$> (Opt.helper <*> opts))
+        (  Opt.fullDesc
+        <> Opt.header "List changed config files."
+        <> Opt.progDesc "List changed or added config files." )
 
 -- * Utils.
 -- $utils
