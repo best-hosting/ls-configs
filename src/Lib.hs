@@ -26,7 +26,7 @@ import Control.Monad.Catch
 import Data.Maybe
 import Data.Monoid
 import Data.Default
-import System.Posix.Files
+import qualified System.Posix.Files as F
 import qualified Filesystem.Path.CurrentOS as F
 
 import Sgf.Control.Lens
@@ -90,39 +90,38 @@ newconffileH _ z    = pure z
 
 -- | Config info.
 data CInfo          = FileInfo
-                        { _fileHash     :: Maybe (Hash Computed)
-                        , _loadedHashes :: [Hash Loaded]
+                        { _fileHash         :: Maybe (Hash Computed)
+                            -- ^ Hash of file (or file pointed by symlink).
+                        , _loadedHashes     :: [Hash Loaded]
+                            -- ^ Loaded hashes for file name.
+                        , _symLinkTargets   :: M.Map Int FilePath
+                            -- ^ Symlink targets, if file is symlink, numbered
+                            -- by depth.
                         }
-                    | SymLinkInfo
-                        { _target       :: Maybe FilePath }
   deriving (Show, Eq)
 -- | Default 'FileInfo' value.
 defFileInfo :: CInfo
-defFileInfo         = FileInfo {_fileHash = Nothing, _loadedHashes = []}
-defSymLinkInfo :: CInfo
-defSymLinkInfo      = SymLinkInfo {_target = Nothing}
+defFileInfo         = FileInfo
+                        { _fileHash         = Nothing
+                        , _loadedHashes     = []
+                        , _symLinkTargets   = M.empty}
 
 -- | Lens from 'CInfo' to 'Computed' file hash.
 fileHash :: LensA CInfo (Maybe (Hash Computed))
 fileHash f z@(FileInfo {_fileHash = x})
                     = fmap (\x' -> z{_fileHash = x'}) (f x)
-fileHash _ z        = pure z
 -- | Lens from 'CInfo' to 'Loaded' file hashes.
 loadedHashes :: LensA CInfo [Hash Loaded]
 loadedHashes f z@(FileInfo {_loadedHashes = x})
                     = fmap (\x' -> z{_loadedHashes = x'}) (f x)
-loadedHashes _ z    = pure z
-symLinkTarget :: LensA CInfo (Maybe FilePath)
-symLinkTarget f z@(SymLinkInfo {_target = x})
-                    = fmap (\x' -> z{_target = x'}) (f x)
-symLinkTarget _ z   = pure z
+symLinkTargets :: LensA CInfo (M.Map Int FilePath)
+symLinkTargets f z@(FileInfo {_symLinkTargets = x})
+                    = fmap (\x' -> z{_symLinkTargets = x'}) (f x)
 
 isFileInfo :: CInfo -> Bool
-isFileInfo (FileInfo _ _)       = True
-isFileInfo _                    = False
+isFileInfo          = M.null . viewA symLinkTargets
 isSymLinkInfo :: CInfo -> Bool
-isSymLinkInfo (SymLinkInfo _)   = True
-isSymLinkInfo _                 = False
+isSymLinkInfo       = not . isFileInfo
 
 -- | Lens from 'CInfo' to computed 'Md5' hash.
 computed :: LensA CInfo Md5
@@ -237,6 +236,14 @@ md5sum xf           = do
     x <- liftEither (toText xf)
     inprocParse (Computed <$> parseMd5) "md5sum" [x] empty
 
+-- | Read file path referenced by symbolic link.
+readSymbolicLink :: (IsString e, MonadError e m, MonadIO m) =>
+                    FilePath -> m FilePath
+readSymbolicLink xf = do
+    x <- liftEither (toText xf)
+    y <- liftIO $ F.readSymbolicLink (T.unpack x)
+    return (fromText (T.pack y))
+
 
 -- * Main.
 -- $main
@@ -296,11 +303,8 @@ readEtc x z         = foldIO x (FoldM go (return z) return)
           _
             | isDirectory xt      -> return z
             | isSymbolicLink xt   -> runIO $ do
-                x <- liftEither (toText xf)
-                -- FIXME: compare fully dereferenced links?
-                y <- liftIO $ readSymbolicLink (T.unpack x)
-                let c = setA symLinkTarget (Just $ fromText (T.pack y))
-                          defSymLinkInfo
+                y <- readSymbolicLink xf
+                let c = setA symLinkTargets (M.fromList [(0, y)]) defFileInfo
                 return $ M.insertWith (flip const) xf c z
             | otherwise           -> return $
                 M.insertWith (flip const) xf defFileInfo z
