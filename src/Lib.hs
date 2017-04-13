@@ -102,10 +102,6 @@ defFileInfo         = FileInfo {_fileHash = Nothing, _loadedHashes = []}
 defSymLinkInfo :: CInfo
 defSymLinkInfo      = SymLinkInfo {_target = Nothing}
 
-instance Monoid CInfo where
-    mempty          = defFileInfo
-    x `mappend` y   = modifyA loadedHashes (++ viewA loadedHashes y) x
-
 -- | Lens from 'CInfo' to 'Computed' file hash.
 fileHash :: LensA CInfo (Maybe (Hash Computed))
 fileHash f z@(FileInfo {_fileHash = x})
@@ -219,26 +215,21 @@ cantCompute x   = isFileInfo x && (isNothing . viewAmaybe computed $ x)
 storedConfs :: Shell (Either Line Line)
 storedConfs         = inprocWithErr "dpkg-query" ["-W", "-f=${Conffiles}\\n"] empty
 
--- | Parse @dpkg-query@ hash values into 'CInfo'.
-parseCInfo :: A.Parser CInfo
-parseCInfo          =
-    (   addFileInfo Stored   <$> parseMd5 <* A.endOfInput
-    <|> addFileInfo Obsolete <$> parseMd5 <* parseString "obsolete"
-            <* A.endOfInput
-    <|> addFileInfo (const Newconffile)  <$> parseString "newconffile"
-            <* A.endOfInput
+-- | Parse @dpkg-query@ hash values into 'Hash Loaded'.
+parseLoaded :: A.Parser (Hash Loaded)
+parseLoaded         =
+    (   Stored   <$> parseMd5 <* A.endOfInput
+    <|> Obsolete <$> parseMd5 <* parseString "obsolete"     <* A.endOfInput
+    <|> (const Newconffile)  <$> parseString "newconffile"  <* A.endOfInput
     ) <|> fail "Can't parse `dpkg` hash value."
-  where
-    addFileInfo :: (a -> Hash Loaded) -> a -> CInfo
-    addFileInfo f x = modifyA loadedHashes ([f x] ++) defFileInfo
 
+-- | Parse string into 'FilePath'.
 parseFilePath :: A.Parser FilePath
 parseFilePath       = fromText <$> parseWord
 
--- | Parse @dpkg-query@ output into ('FilePath', 'CInfo') pair for loading
--- into 'ConfMap'.
-parseConf :: A.Parser (FilePath, CInfo)
-parseConf           = (,) <$> parseFilePath <*> parseCInfo
+-- | Parse string of @dpkg-query@ output.
+parseDpkg :: A.Parser (FilePath, Hash Loaded)
+parseDpkg           = (,) <$> parseFilePath <*> parseLoaded
 
 -- | Calculate md5 hash of a file.
 md5sum :: FilePath -> P (Hash Computed)
@@ -265,13 +256,14 @@ parse p             = liftEither . A.parseOnly p . lineToText
 inprocParse :: A.Parser a -> Text -> [Text] -> Shell Line -> P a
 inprocParse p cmd args inp  = ExceptT (inprocWithErr cmd args inp) >>= parse p
 
--- | Load 'ConfMap' from a 'Shell' parsing output using specified parser.
+-- | Load hashes for files /already/ present in 'ConfMap' from @dpkg-query@
+-- output.
 loadConfMap :: MonadIO m =>
-               Shell (Either Line Line)     -- ^ Input.
-            -> ConfMap                      -- ^ Add parsed values here.
-            -> A.Parser (FilePath, CInfo)   -- ^ Parser for input.
+               Shell (Either Line Line)         -- ^ Input.
+            -> A.Parser (FilePath, Hash Loaded) -- ^ Parser for input.
+            -> ConfMap                          -- ^ Add parsed values here.
             -> m ConfMap
-loadConfMap x z p   = foldIO x $
+loadConfMap x p z  = foldIO x $
                         FoldM (\z mx -> runIO (liftEither mx >>= go z))
                               (return z)
                               return
@@ -280,7 +272,10 @@ loadConfMap x z p   = foldIO x $
           ConfMap -> Line -> m ConfMap
     go zm y
       | y == ""     = return zm
-      | otherwise   = parse ((\(k, w) -> M.insertWith mappend k w zm) <$> p) y
+      | otherwise   = parse (flip adj zm <$> p) y
+      where
+        adj :: (FilePath, Hash Loaded) -> ConfMap -> ConfMap
+        adj (k, w') = M.adjust (modifyA loadedHashes (w' :)) k
 
 lstreeNoDeref :: FilePath -> Shell FilePath
 lstreeNoDeref p     = do
@@ -312,7 +307,8 @@ readEtc x z         = foldIO x (FoldM go (return z) return)
 
 main_3 :: P ()
 main_3  = do
-    xm <- loadConfMap storedConfs M.empty parseConf >>= readEtc (lstreeNoDeref "/etc")
+    xm <- readEtc (lstreeNoDeref "/etc") M.empty >>=
+          loadConfMap storedConfs parseDpkg
     let --obs = any ((== Just Obsolete) . viewAmaybe hashSource)
         --noh = any (not . isJust . viewAmaybe hash2)
         --com = any ((== Just Computed) . viewAmaybe hashSource)
