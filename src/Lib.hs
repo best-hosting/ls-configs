@@ -163,15 +163,16 @@ compute hash z0     = M.foldrWithKey go (return z0) z0
   where
     go :: (IsString e, MonadError e m, Alternative m) =>
           FilePath -> CInfo -> m ConfMap -> m ConfMap
-    go k x mz
-      | isSymLinkInfo x = mz
-      | otherwise       = do
+    go k x mz       = do
           z  <- mz
-          x' <- upd (hash k) x
+          x' <- maybeUpdate fileHash (hash k) x <|> return x
           return (M.insert k x' z)
-    upd :: (IsString e, MonadError e m, Alternative m) =>
-           m (Hash Computed) -> CInfo -> m CInfo
-    upd mh          = modifyAA fileHash (\w -> Just <$> (liftMaybe w <|> mh) <|> return Nothing)
+
+-- | If field is `Nothing` try to evaluate supplied monadic value to get a new
+-- value.
+maybeUpdate :: (IsString e, MonadError e m, Alternative m) =>
+               LensA a (Maybe b) -> m b -> a -> m a
+maybeUpdate l mh    = modifyAA l (\w -> Just <$> (liftMaybe w <|> mh))
 
 -- | Map for storing information about configs.
 type ConfMap        = M.Map FilePath CInfo
@@ -354,7 +355,7 @@ liftEither          = either (throwError . fromString . show) return
 
 -- | Lift 'Maybe' into 'MonadError'.
 liftMaybe :: (IsString e, MonadError e m) => Maybe a -> m a
-liftMaybe           = maybe (throwError "Nothing") return
+liftMaybe           = maybe (throwError "Error: Nothing. ") return
 
 -- | Return 'mempty' instead of error.
 ignoreError :: (MonadError Line m, Monoid a, MonadIO m) => m a -> m a
