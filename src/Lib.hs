@@ -246,7 +246,12 @@ hashFilterOpts      =
     <|> Opt.flag' (const (isNothing . viewAmaybe computed))
             (   Opt.long "errors-read"
             <>  Opt.help
-                    "Show files, which has can't be read.")
+                    "Show files, which can't be read.")
+    <|> Opt.flag' (const (     (== defPackage) . viewA package
+                          <&&> not . null . viewA loadedHashes))
+            (   Opt.long "errors-orphaned"
+            <>  Opt.help
+                    "Show files does not belonging to any package.")
     <|> pure (viewAmaybe computed `eq`)
   where
     -- | Generalize an `elem`. Empty list is a failure (default value is
