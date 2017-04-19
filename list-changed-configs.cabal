@@ -29,6 +29,7 @@ library
                         , filepath
                         , directory
                         , unix
+                        , foldl
                         , data-default
                         , system-filepath
                         , optparse-applicative
