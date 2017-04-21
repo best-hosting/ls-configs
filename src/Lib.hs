@@ -127,6 +127,7 @@ data CInfo          = FileInfo
                         { _filePath         :: FilePath
                         , _fileHash         :: Maybe (Hash Computed)
                             -- ^ Hash of file (or file pointed by symlink).
+                        , _targetFileHash   :: Maybe (Hash Computed)
                         , _loadedHashes     :: [Hash Loaded]
                             -- ^ Loaded hashes for file name.
                         , _symLinkTargets   :: M.Map Int FilePath
@@ -149,6 +150,7 @@ instance FromJSON CInfo where
     parseJSON       = withObject "FileInfo" $ \v -> FileInfo
                         <$> (F.decodeString <$> v .: "filePath")
                         <*> v .: "fileHash"
+                        <*> v .: "targetFileHash"
                         <*> v .: "loadedHashes"
                         <*> (M.map F.decodeString <$> v .: "symLinkTargets")
                         <*> v .: "package"
@@ -156,6 +158,7 @@ instance ToJSON CInfo where
     toJSON x        = object
         [ "filePath"       .= F.encodeString (viewA filePath x)
         , "fileHash"       .= viewA fileHash x
+        , "targetFileHash" .= viewA targetFileHash x
         , "loadedHashes"   .= viewA loadedHashes x
         , "symLinkTargets" .= M.map F.encodeString (viewA symLinkTargets x)
         , "package"        .= viewA package x
@@ -166,6 +169,7 @@ defFileInfo :: CInfo
 defFileInfo         = FileInfo
                         { _filePath         = ""
                         , _fileHash         = Nothing
+                        , _targetFileHash   = Nothing
                         , _loadedHashes     = []
                         , _symLinkTargets   = M.empty
                         , _package          = defPackage
@@ -178,6 +182,9 @@ filePath f z@(FileInfo {_filePath = x})
 fileHash :: LensA CInfo (Maybe (Hash Computed))
 fileHash f z@(FileInfo {_fileHash = x})
                     = fmap (\x' -> z{_fileHash = x'}) (f x)
+targetFileHash :: LensA CInfo (Maybe (Hash Computed))
+targetFileHash f z@(FileInfo {_targetFileHash = x})
+                    = fmap (\x' -> z{_targetFileHash = x'}) (f x)
 -- | Lens from 'CInfo' to 'Loaded' file hashes.
 loadedHashes :: LensA CInfo [Hash Loaded]
 loadedHashes f z@(FileInfo {_loadedHashes = x})
@@ -259,10 +266,12 @@ data Config         = Config
                         { dpkgOutput        :: Shell (Either Line Line)
                         , dbFile            :: Maybe FilePath
                         , etcPath           :: FilePath
+                        , targetPath        :: Maybe FilePath
                         , hashesList        :: CInfo -> [Md5]
                         , hashFilter        :: (CInfo -> [Md5]) -> CInfo -> Bool
                         , fileTypeFilter    :: CInfo -> Bool
                         , packageFilter     :: Package -> Bool
+                        , targetFilter      :: CInfo -> Bool
                         }
 
 data Package        = Package { _pkgName    :: Maybe Text
@@ -298,6 +307,27 @@ pkgStatus f z@(Package {_pkgStatus = x})
 -- $filters
 --
 -- Filters for 'ConfMap' working on 'CInfo' values.
+
+-- | Options related to target directory.
+targetFilterOpts :: Opt.Parser (CInfo -> Bool)
+targetFilterOpts    =
+        Opt.flag' (cmpBy (==))
+            (  Opt.long "target-equal"
+            <> Opt.help
+                    ("Show source files, which are the same in target."))
+    <|> Opt.flag' (fromMaybe False <$> cmpBy (liftA2 (/=)))
+            (  Opt.long "target-differ"
+            <> Opt.help
+                    ("Show source files differing from target ones."))
+    <|> Opt.flag' (isNothing . viewA targetFileHash)
+            (  Opt.long "target-missed"
+            <> Opt.help
+                    ("Show source files missed in target."))
+    <|> pure (fromMaybe True <$> cmpBy (liftA2 (/=)))
+  where
+    cmpBy :: (Maybe (Hash Computed) -> Maybe (Hash Computed) -> b)
+           -> CInfo -> b
+    cmpBy eq        = eq <$> viewA fileHash <*> viewA targetFileHash
 
 -- | Options for generating list of hashes to filter from.
 hashesListOpts :: Opt.Parser (CInfo -> [Md5])
@@ -554,10 +584,16 @@ opts                = Config
                 <> Opt.metavar "DIR"
                 <> Opt.help "Store db to file.")
         )
+    <*> (Opt.option (Opt.eitherReader readFilePath)
+            (  Opt.long "target"
+            <> Opt.value Nothing
+            <> Opt.metavar "DIR"
+            <> Opt.help ("Directory to compare source files with.")))
     <*> hashesListOpts
     <*> hashFilterOpts
     <*> fileTypeOpts
     <*> packageOpts
+    <*> targetFilterOpts
   where
     readFilePath :: String -> Either String (Maybe FilePath)
     readFilePath          = Right . Just . fromText . fromString
@@ -587,16 +623,23 @@ work :: Config -> P ()
 work Config { dpkgOutput        = dpkg
             , dbFile            = db
             , etcPath           = etc
+            , targetPath        = mtrg
             , hashesList        = hs
             , hashFilter        = eq
             , fileTypeFilter    = ft
             , packageFilter     = pkf
+            , targetFilter      = trf
             }       = do
     xm0 <- loadDb etc db
-    ym0 <- loadDpkg "/etc/" dpkg xm0 >>=
+    xm1 <- loadDpkg "/etc/" dpkg xm0 >>=
            compute ((etc </>) . viewA filePath) fileHash md5sum
+    ym0 <- maybe (return xm1)
+                 (\trg -> compute ((trg </>) . viewA filePath)
+                            targetFileHash
+                            md5sum xm1)
+                 mtrg
     saveDb db ym0
-    let ym = M.filter (eq hs <&&> ft <&&> pf) ym0
+    let ym = M.filter (trf <&&> eq hs <&&> ft <&&> pf) ym0
     liftIO $ mapM_ print (M.elems . M.map ((etc </>) . viewA filePath) $ ym)
     -- !!!
   where
