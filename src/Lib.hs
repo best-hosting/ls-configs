@@ -16,7 +16,7 @@ import qualified Data.Text as T
 import Turtle
 import qualified Data.Attoparsec.Text as A
 import Data.Text.Encoding
-import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy as B
 import Data.Char
 import Data.Maybe
 import qualified Data.List as L
@@ -36,6 +36,7 @@ import qualified Control.Foldl as F
 import Data.Function
 import Control.Monad.Reader
 import Data.Functor.Const
+import Data.Aeson
 
 import Sgf.Control.Lens
 
@@ -50,6 +51,11 @@ newtype Md5         = Md5 {fromMd5 :: Text}
 md5 :: LensA Md5 Text
 md5 f z@(Md5 {fromMd5 = x})
                     = fmap (\x' -> z{fromMd5 = x'}) (f x)
+
+instance FromJSON Md5 where
+    parseJSON       = withObject "Md5" $ \v -> Md5 <$> v .: "md5"
+instance ToJSON Md5 where
+    toJSON x        = object [ "md5" .= viewA md5 x]
 
 -- | Parse 'Md5' hash string.
 parseMd5 :: A.Parser Md5
@@ -75,6 +81,27 @@ data Hash a where
     Newconffile :: Hash Loaded
 deriving instance Show (Hash a)
 deriving instance Eq (Hash a)
+
+instance FromJSON (Hash Loaded) where
+    parseJSON       = withObject "Hash Loaded" $ \v ->
+            Stored   <$> v .: "Stored"
+        <|> Obsolete <$> v .: "Obsolete"
+        <|> (v .: "tag" >>= \t -> case (t :: Text) of
+              "Newconffile" -> return Newconffile
+              _             -> fail "Huh")
+instance ToJSON (Hash Loaded) where
+    toJSON x        = object
+        [ case x of
+            Stored   m  -> "Stored"     .= m
+            Obsolete m  -> "Obsolete"   .= m
+            Newconffile -> "tag"        .= T.pack (show Newconffile)
+        ]
+
+instance FromJSON (Hash Computed) where
+    parseJSON       = withObject "Hash Computed" $ \v ->
+                        Computed <$> v .: "Computed"
+instance ToJSON (Hash Computed) where
+    toJSON x        = object ["Computed" .= viewA computedH x]
 
 -- | Lens to hash value computed by us.
 computedH :: LensA (Hash Computed) Md5
@@ -109,6 +136,23 @@ data CInfo          = FileInfo
                         , _package          :: Package
                         }
   deriving (Show, Eq)
+
+instance FromJSON CInfo where
+    parseJSON       = withObject "FileInfo" $ \v -> FileInfo
+                        <$> (F.decodeString <$> v .: "filePath")
+                        <*> v .: "fileHash"
+                        <*> v .: "loadedHashes"
+                        <*> (M.map F.decodeString <$> v .: "symLinkTargets")
+                        <*> v .: "package"
+instance ToJSON CInfo where
+    toJSON x        = object
+        [ "filePath"       .= F.encodeString (viewA filePath x)
+        , "fileHash"       .= viewA fileHash x
+        , "loadedHashes"   .= viewA loadedHashes x
+        , "symLinkTargets" .= M.map F.encodeString (viewA symLinkTargets x)
+        , "package"        .= viewA package x
+        ]
+
 -- | Default 'FileInfo' value.
 defFileInfo :: CInfo
 defFileInfo         = FileInfo
@@ -204,6 +248,15 @@ data Config         = Config
 
 data Package        = Package {_pkgName :: Text, _pkgStatus :: Text}
   deriving (Show, Eq)
+
+instance FromJSON Package where
+    parseJSON       = withObject "Package" $ \v -> Package
+                        <$> v .: "pkgName"
+                        <*> v .: "pkgStatus"
+instance ToJSON Package where
+    toJSON x        = object [ "pkgName"    .= viewA pkgName x
+                             , "pkgStatus"  .= viewA pkgStatus x
+                             ]
 
 pkgName :: LensA Package Text
 pkgName f z@(Package {_pkgName = x})
