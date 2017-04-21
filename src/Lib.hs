@@ -98,7 +98,8 @@ newconffileH _ z    = pure z
 
 -- | Config file info.
 data CInfo          = FileInfo
-                        { _fileHash         :: Maybe (Hash Computed)
+                        { _filePath         :: FilePath
+                        , _fileHash         :: Maybe (Hash Computed)
                             -- ^ Hash of file (or file pointed by symlink).
                         , _loadedHashes     :: [Hash Loaded]
                             -- ^ Loaded hashes for file name.
@@ -111,12 +112,16 @@ data CInfo          = FileInfo
 -- | Default 'FileInfo' value.
 defFileInfo :: CInfo
 defFileInfo         = FileInfo
-                        { _fileHash         = Nothing
+                        { _filePath         = ""
+                        , _fileHash         = Nothing
                         , _loadedHashes     = []
                         , _symLinkTargets   = M.empty
                         , _package          = defPackage
                         }
 
+filePath :: LensA CInfo FilePath
+filePath f z@(FileInfo {_filePath = x})
+                    = fmap (\x' -> z{_filePath = x'}) (f x)
 -- | Lens from 'CInfo' to 'Computed' file hash.
 fileHash :: LensA CInfo (Maybe (Hash Computed))
 fileHash f z@(FileInfo {_fileHash = x})
@@ -168,14 +173,15 @@ allObsolete x       = fromMaybe [] $ do
 -- | Compute hash for all files in 'ConfMap'.
 compute :: forall e m. (IsString e, MonadError e m, Alternative m) =>
            (FilePath -> m (Hash Computed)) -> ConfMap -> m ConfMap
-compute hash z0     = M.foldrWithKey go (return z0) z0
+compute hash z0     = M.foldr go (return z0) z0
   where
     go :: (IsString e, MonadError e m, Alternative m) =>
-          FilePath -> CInfo -> m ConfMap -> m ConfMap
-    go k x mz       = do
+          CInfo -> m ConfMap -> m ConfMap
+    go x mz         = do
           z  <- mz
+          let k = viewA filePath x
           x' <- maybeUpdate fileHash (hash k) x <|> return x
-          return (M.insert k x' z)
+          return (M.adjust (const x') k z)
 
 -- | If field is `Nothing` try to evaluate supplied monadic value to get a new
 -- value.
@@ -425,16 +431,15 @@ readEtc x z         = foldIO x (FoldM go (return z) return)
   where
     go :: MonadIO m => ConfMap -> FilePath -> m ConfMap
     go z xf         = do
+        let v = setA filePath xf defFileInfo
         xt <- lstat xf
-        case xt of
-          _
-            | isDirectory xt      -> return z
-            | isSymbolicLink xt   -> runIO $ do
-                y <- readSymbolicLink xf
-                let c = setA symLinkTargets (M.fromList [(0, y)]) defFileInfo
-                return $ M.insertWith (flip const) xf c z
-            | otherwise           -> return $
-                M.insertWith (flip const) xf defFileInfo z
+        if isDirectory xt
+          then return z
+          else do
+            v' <- whenDef (isSymbolicLink xt) v $ runIO $ do
+                    y <- readSymbolicLink xf
+                    return (setA symLinkTargets (M.fromList [(0, y)]) v)
+            return $ M.insert (viewA filePath v') v' z
 
 opts :: Opt.Parser Config
 opts                = Config
@@ -464,7 +469,7 @@ work Config { dpkgOutput        = dpkg
     xm <- readEtc (lstreeNoDeref etc) M.empty >>= loadDpkg dpkg
     ym0 <- compute md5sum xm
     let ym = M.filter (eq hs <&&> ft <&&> pf) ym0
-    liftIO $ mapM_ print (M.keys ym)
+    liftIO $ mapM_ print (M.elems . M.map (viewA filePath) $ ym)
   where
     -- | Convert 'Package -> Bool' to 'CInfo -> Bool'.
     pf :: CInfo -> Bool
@@ -563,4 +568,9 @@ byField ::    LensA a Text  -- ^ Lens to field.
            -> Bool
 byField l p         = either (const False) (const True)
                         . A.parseOnly p . viewA l
+
+whenDef :: Monad m => Bool -> a -> m a -> m a
+whenDef b y mx
+  | b               = mx
+  | otherwise       = return y
 
