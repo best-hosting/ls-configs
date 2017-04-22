@@ -16,7 +16,7 @@ import qualified Data.Text as T
 import Turtle
 import qualified Data.Attoparsec.Text as A
 import Data.Text.Encoding
-import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy as B
 import Data.Char
 import Data.Maybe
 import qualified Data.List as L
@@ -28,7 +28,6 @@ import qualified Turtle.Bytes as B
 import Control.Monad.Catch
 import Data.Maybe
 import Data.Monoid
-import Data.Default
 import qualified System.Posix.Files as F
 import qualified Filesystem.Path.CurrentOS as F
 import qualified Options.Applicative as Opt
@@ -36,6 +35,7 @@ import qualified Control.Foldl as F
 import Data.Function
 import Control.Monad.Reader
 import Data.Functor.Const
+import Data.Aeson
 
 import Sgf.Control.Lens
 
@@ -50,6 +50,11 @@ newtype Md5         = Md5 {fromMd5 :: Text}
 md5 :: LensA Md5 Text
 md5 f z@(Md5 {fromMd5 = x})
                     = fmap (\x' -> z{fromMd5 = x'}) (f x)
+
+instance FromJSON Md5 where
+    parseJSON       = withObject "Md5" $ \v -> Md5 <$> v .: "md5"
+instance ToJSON Md5 where
+    toJSON x        = object [ "md5" .= viewA md5 x]
 
 -- | Parse 'Md5' hash string.
 parseMd5 :: A.Parser Md5
@@ -75,6 +80,27 @@ data Hash a where
     Newconffile :: Hash Loaded
 deriving instance Show (Hash a)
 deriving instance Eq (Hash a)
+
+instance FromJSON (Hash Loaded) where
+    parseJSON       = withObject "Hash Loaded" $ \v ->
+            Stored   <$> v .: "Stored"
+        <|> Obsolete <$> v .: "Obsolete"
+        <|> (v .: "tag" >>= \t -> case (t :: Text) of
+              "Newconffile" -> return Newconffile
+              _             -> fail "Huh")
+instance ToJSON (Hash Loaded) where
+    toJSON x        = object
+        [ case x of
+            Stored   m  -> "Stored"     .= m
+            Obsolete m  -> "Obsolete"   .= m
+            Newconffile -> "tag"        .= T.pack (show Newconffile)
+        ]
+
+instance FromJSON (Hash Computed) where
+    parseJSON       = withObject "Hash Computed" $ \v ->
+                        Computed <$> v .: "Computed"
+instance ToJSON (Hash Computed) where
+    toJSON x        = object ["Computed" .= viewA computedH x]
 
 -- | Lens to hash value computed by us.
 computedH :: LensA (Hash Computed) Md5
@@ -109,6 +135,23 @@ data CInfo          = FileInfo
                         , _package          :: Package
                         }
   deriving (Show, Eq)
+
+instance FromJSON CInfo where
+    parseJSON       = withObject "FileInfo" $ \v -> FileInfo
+                        <$> (F.decodeString <$> v .: "filePath")
+                        <*> v .: "fileHash"
+                        <*> v .: "loadedHashes"
+                        <*> (M.map F.decodeString <$> v .: "symLinkTargets")
+                        <*> v .: "package"
+instance ToJSON CInfo where
+    toJSON x        = object
+        [ "filePath"       .= F.encodeString (viewA filePath x)
+        , "fileHash"       .= viewA fileHash x
+        , "loadedHashes"   .= viewA loadedHashes x
+        , "symLinkTargets" .= M.map F.encodeString (viewA symLinkTargets x)
+        , "package"        .= viewA package x
+        ]
+
 -- | Default 'FileInfo' value.
 defFileInfo :: CInfo
 defFileInfo         = FileInfo
@@ -195,6 +238,7 @@ type ConfMap        = M.Map FilePath CInfo
 -- | Program own config.
 data Config         = Config
                         { dpkgOutput        :: Shell (Either Line Line)
+                        , dbFile            :: Maybe FilePath
                         , etcPath           :: FilePath
                         , hashesList        :: CInfo -> [Md5]
                         , hashFilter        :: (CInfo -> [Md5]) -> CInfo -> Bool
@@ -204,6 +248,15 @@ data Config         = Config
 
 data Package        = Package {_pkgName :: Text, _pkgStatus :: Text}
   deriving (Show, Eq)
+
+instance FromJSON Package where
+    parseJSON       = withObject "Package" $ \v -> Package
+                        <$> v .: "pkgName"
+                        <*> v .: "pkgStatus"
+instance ToJSON Package where
+    toJSON x        = object [ "pkgName"    .= viewA pkgName x
+                             , "pkgStatus"  .= viewA pkgStatus x
+                             ]
 
 pkgName :: LensA Package Text
 pkgName f z@(Package {_pkgName = x})
@@ -452,22 +505,54 @@ opts                = Config
                 <> Opt.help "Read `dpkg-query` output from file.")
             <|> pure systemConfsWithPkg
         )
+    <*> (   Opt.option (Opt.eitherReader (fmap Just . readFilePath))
+                (  Opt.long "db"
+                <> Opt.value Nothing
+                <> Opt.metavar "FILE"
+                <> Opt.help "Store db to file.")
+        )
     <*> pure "/etc"
     <*> hashesListOpts
     <*> hashFilterOpts
     <*> fileTypeOpts
     <*> packageOpts
+  where
+    readFilePath :: String -> Either String FilePath
+    readFilePath          = Right . fromText . fromString
+
+-- | Convert db to json and write to file.
+saveDb :: Maybe FilePath -> ConfMap -> P ()
+saveDb mf xm        = flip catchError (const (return ())) $ do
+    db <- liftMaybe mf
+    liftIO . B.writeFile (F.encodeString db) . encode . M.elems $ xm
+
+-- | Load db from json.
+loadDb :: (MonadError e m, IsString e, MonadIO m) =>
+          FilePath -> Maybe FilePath -> m ConfMap
+loadDb etc mf       = flip catchError def $ do
+    db <- liftMaybe mf
+    b  <- testfile db
+    if (not b)
+      then throwError "Db file does not exist."
+      else do
+        xs <- liftIO (B.readFile (F.encodeString db)) >>= liftMaybe . decode
+        return $ M.fromList . map (\x -> (viewA filePath x, x)) $ xs
+  where
+    def :: (MonadError e m, IsString e, MonadIO m) => e -> m ConfMap
+    def _           = readEtc (lstreeNoDeref etc) M.empty
 
 work :: Config -> P ()
 work Config { dpkgOutput        = dpkg
+            , dbFile            = db
             , etcPath           = etc
             , hashesList        = hs
             , hashFilter        = eq
             , fileTypeFilter    = ft
             , packageFilter     = pkf
             }       = do
-    xm <- readEtc (lstreeNoDeref etc) M.empty >>= loadDpkg dpkg
-    ym0 <- compute md5sum xm
+    xm0 <- loadDb etc db
+    ym0 <- loadDpkg dpkg xm0 >>= compute md5sum
+    saveDb db ym0
     let ym = M.filter (eq hs <&&> ft <&&> pf) ym0
     liftIO $ mapM_ print (M.elems . M.map (viewA filePath) $ ym)
   where
@@ -532,8 +617,11 @@ liftMaybe           = maybe (throwError "Error: Nothing. ") return
 
 -- | Return 'mempty' instead of error.
 ignoreError :: (MonadError Line m, Monoid a, MonadIO m) => m a -> m a
-ignoreError         = flip catchError (\e -> stderrUtf8 e >> return mempty)
+ignoreError         = ignoreErrorDef mempty
 
+ignoreErrorDef :: (MonadError Line m, MonadIO m) => a -> m a -> m a
+ignoreErrorDef def  = flip catchError (\e -> stderrUtf8 e >> return def)
+ 
 -- | Print utf8 error message correctly.
 stderrUtf8 :: MonadIO m => Line -> m ()
 stderrUtf8          = B.stderr . return . encodeUtf8 . linesToText . (: [])
