@@ -28,7 +28,6 @@ import qualified Turtle.Bytes as B
 import Control.Monad.Catch
 import Data.Maybe
 import Data.Monoid
-import Data.Default
 import qualified System.Posix.Files as F
 import qualified Filesystem.Path.CurrentOS as F
 import qualified Options.Applicative as Opt
@@ -239,6 +238,7 @@ type ConfMap        = M.Map FilePath CInfo
 -- | Program own config.
 data Config         = Config
                         { dpkgOutput        :: Shell (Either Line Line)
+                        , dbFile            :: Maybe FilePath
                         , etcPath           :: FilePath
                         , hashesList        :: CInfo -> [Md5]
                         , hashFilter        :: (CInfo -> [Md5]) -> CInfo -> Bool
@@ -505,22 +505,54 @@ opts                = Config
                 <> Opt.help "Read `dpkg-query` output from file.")
             <|> pure systemConfsWithPkg
         )
+    <*> (   Opt.option (Opt.eitherReader (fmap Just . readFilePath))
+                (  Opt.long "db"
+                <> Opt.value Nothing
+                <> Opt.metavar "FILE"
+                <> Opt.help "Store db to file.")
+        )
     <*> pure "/etc"
     <*> hashesListOpts
     <*> hashFilterOpts
     <*> fileTypeOpts
     <*> packageOpts
+  where
+    readFilePath :: String -> Either String FilePath
+    readFilePath          = Right . fromText . fromString
+
+-- | Convert db to json and write to file.
+saveDb :: Maybe FilePath -> ConfMap -> P ()
+saveDb mf xm        = flip catchError (const (return ())) $ do
+    db <- liftMaybe mf
+    liftIO . B.writeFile (F.encodeString db) . encode . M.elems $ xm
+
+-- | Load db from json.
+loadDb :: (MonadError e m, IsString e, MonadIO m) =>
+          FilePath -> Maybe FilePath -> m ConfMap
+loadDb etc mf       = flip catchError def $ do
+    db <- liftMaybe mf
+    b  <- testfile db
+    if (not b)
+      then throwError "Db file does not exist."
+      else do
+        xs <- liftIO (B.readFile (F.encodeString db)) >>= liftMaybe . decode
+        return $ M.fromList . map (\x -> (viewA filePath x, x)) $ xs
+  where
+    def :: (MonadError e m, IsString e, MonadIO m) => e -> m ConfMap
+    def _           = readEtc (lstreeNoDeref etc) M.empty
 
 work :: Config -> P ()
 work Config { dpkgOutput        = dpkg
+            , dbFile            = db
             , etcPath           = etc
             , hashesList        = hs
             , hashFilter        = eq
             , fileTypeFilter    = ft
             , packageFilter     = pkf
             }       = do
-    xm <- readEtc (lstreeNoDeref etc) M.empty >>= loadDpkg dpkg
-    ym0 <- compute md5sum xm
+    xm0 <- loadDb etc db
+    ym0 <- loadDpkg dpkg xm0 >>= compute md5sum
+    saveDb db ym0
     let ym = M.filter (eq hs <&&> ft <&&> pf) ym0
     liftIO $ mapM_ print (M.elems . M.map (viewA filePath) $ ym)
   where
@@ -585,8 +617,11 @@ liftMaybe           = maybe (throwError "Error: Nothing. ") return
 
 -- | Return 'mempty' instead of error.
 ignoreError :: (MonadError Line m, Monoid a, MonadIO m) => m a -> m a
-ignoreError         = flip catchError (\e -> stderrUtf8 e >> return mempty)
+ignoreError         = ignoreErrorDef mempty
 
+ignoreErrorDef :: (MonadError Line m, MonadIO m) => a -> m a -> m a
+ignoreErrorDef def  = flip catchError (\e -> stderrUtf8 e >> return def)
+ 
 -- | Print utf8 error message correctly.
 stderrUtf8 :: MonadIO m => Line -> m ()
 stderrUtf8          = B.stderr . return . encodeUtf8 . linesToText . (: [])

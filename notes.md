@@ -78,4 +78,12 @@
       `--obsolete` hashes to be an empty list.  I.e. this an operation, like
       "not equal" working on a hash list.
 
+7. If db file exists, i should _not_ re-read system state. to re-read system
+   state properly, i need to recompute also all hashes, which makes db
+   useless. If i re-read system files wihtout recomputing _existing_ hashes
+   and only compute hashes, when there is no old hash, this allows to notice
+   added files, but i still will _not_ notice deleted or changed files. I.e.
+   such re-read will be partially correct. So, i think, it's better to only do
+   a re-read, when explicitly requested.
+
 [1]: https://serverfault.com/questions/90400/how-to-check-for-modified-config-files-on-a-debian-system
