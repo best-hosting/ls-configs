@@ -136,6 +136,15 @@ data CInfo          = FileInfo
                         }
   deriving (Show, Eq)
 
+instance Monoid CInfo where
+    mempty          = defFileInfo
+    x `mappend` y   =
+          modifyA fileHash     (<|> viewA fileHash y)
+        . modifyA loadedHashes (viewA loadedHashes y ++)
+        . modifyA symLinkTargets (`mappend` viewA symLinkTargets y)
+        . modifyA package        (`mappend` viewA package y)
+        $ x
+
 instance FromJSON CInfo where
     parseJSON       = withObject "FileInfo" $ \v -> FileInfo
                         <$> (F.decodeString <$> v .: "filePath")
@@ -475,8 +484,11 @@ loadDpkg s z    = foldIO s $ FoldM (\z ml -> runIO (liftEither ml >>= go z))
                       <|> parse (                (, zm) <$> parsePackage)  y
       where
         adj :: (FilePath, Hash Loaded) -> ConfMap -> ConfMap
-        adj (k, w') = flip M.adjust k
-                        $ setA package pkg . modifyA loadedHashes (w' :)
+        adj (k, w') = let x =     setA filePath k
+                                . setA package pkg
+                                . modifyA loadedHashes (w' :)
+                                $ mempty
+                      in  M.adjust (`mappend` x) k
 
 lstreeNoDeref :: FilePath -> Shell FilePath
 lstreeNoDeref p     = do
@@ -629,7 +641,7 @@ ignoreError         = ignoreErrorDef mempty
 
 ignoreErrorDef :: (MonadError Line m, MonadIO m) => a -> m a -> m a
 ignoreErrorDef def  = flip catchError (\e -> stderrUtf8 e >> return def)
- 
+
 -- | Print utf8 error message correctly.
 stderrUtf8 :: MonadIO m => Line -> m ()
 stderrUtf8          = B.stderr . return . encodeUtf8 . linesToText . (: [])
