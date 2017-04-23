@@ -479,10 +479,11 @@ inprocParse p cmd args inp  = ExceptT (inprocWithErr cmd args inp) >>= parse p
 -- | Load @dpkg-query@ output into 'ConfMap' for files /already/ present in
 -- 'ConfMap'.
 loadDpkg :: MonadIO m =>
-               Shell (Either Line Line)         -- ^ Input.
-            -> ConfMap                          -- ^ Add parsed values here.
+               FilePath                 -- ^ Path prefix (`/etc` usually).
+            -> Shell (Either Line Line) -- ^ Input.
+            -> ConfMap                  -- ^ Add parsed values here.
             -> m ConfMap
-loadDpkg s z    = foldIO s $ FoldM (\z ml -> runIO (liftEither ml >>= go z))
+loadDpkg etc s z    = foldIO s $ FoldM (\z ml -> runIO (liftEither ml >>= go z))
                                    (return (defPackage, z))
                                    (return . snd)
   where
@@ -493,8 +494,10 @@ loadDpkg s z    = foldIO s $ FoldM (\z ml -> runIO (liftEither ml >>= go z))
       | otherwise   =     parse ((pkg, ) . flip adj zm  <$> parseConffile) y
                       <|> parse (                (, zm) <$> parsePackage)  y
       where
+        -- | `dpkg` output should always contain configs in `/etc`, so
+        -- hardcode it here.
         adj :: (FilePath, Hash Loaded) -> ConfMap -> ConfMap
-        adj (k, w') = let x =     setA filePath k
+        adj (k, w') = let x = setA filePath (replacePrefix etc "" k)
                                 . setA package pkg
                                 . modifyA loadedHashes (w' :)
                                 $ mempty
@@ -510,12 +513,12 @@ lstreeNoDeref p     = do
       else return x
 
 -- | Add all files from `/etc` to db.
-readEtc :: MonadIO m => Shell FilePath -> ConfMap -> m ConfMap
-readEtc x z         = foldIO x (FoldM go (return z) return)
+readEtc :: MonadIO m => FilePath -> Shell FilePath -> ConfMap -> m ConfMap
+readEtc etc x z     = foldIO x (FoldM go (return z) return)
   where
     go :: MonadIO m => ConfMap -> FilePath -> m ConfMap
     go z xf         = do
-        let v = setA filePath xf defFileInfo
+        let v = setA filePath (replacePrefix etc "" xf) mempty
         xt <- lstat xf
         if isDirectory xt
         -- !!!
@@ -571,7 +574,7 @@ loadDb etc mf       = flip catchError def $ do
         return $ M.fromList . map (\x -> (getKey x, x)) $ xs
   where
     def :: (MonadError e m, IsString e, MonadIO m) => e -> m ConfMap
-    def _           = readEtc (lstreeNoDeref etc) M.empty
+    def _           = readEtc etc (lstreeNoDeref etc) M.empty
 
 work :: Config -> P ()
 work Config { dpkgOutput        = dpkg
@@ -583,10 +586,11 @@ work Config { dpkgOutput        = dpkg
             , packageFilter     = pkf
             }       = do
     xm0 <- loadDb etc db
-    ym0 <- loadDpkg dpkg xm0 >>= compute (viewA filePath) fileHash md5sum
+    ym0 <- loadDpkg etc dpkg xm0 >>=
+           compute ((etc </>) . viewA filePath) fileHash md5sum
     saveDb db ym0
     let ym = M.filter (eq hs <&&> ft <&&> pf) ym0
-    liftIO $ mapM_ print (M.elems . M.map (viewA filePath) $ ym)
+    liftIO $ mapM_ print (M.elems . M.map ((etc </>) . viewA filePath) $ ym)
     -- !!!
   where
     -- | Convert 'Package -> Bool' to 'CInfo -> Bool'.
@@ -695,4 +699,14 @@ whenDef :: Monad m => Bool -> a -> m a -> m a
 whenDef b y mx
   | b               = mx
   | otherwise       = return y
+
+-- | Replace path prefix @old@ (starting and ending at path component
+-- boundaries) with @new@, if matched:
+--
+-- >    replacePrefix old new path
+replacePrefix ::   FilePath     -- ^ @Old@ path prefix to replace with.
+                -> FilePath     -- ^ @New@ path prefix to substitute to.
+                -> FilePath     -- ^ Path.
+                -> FilePath     -- ^ Resulting path.
+replacePrefix old new x  = maybe x (new </>) (stripPrefix old x)
 
