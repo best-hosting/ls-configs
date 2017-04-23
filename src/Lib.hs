@@ -246,9 +246,19 @@ data Config         = Config
                         , packageFilter     :: Package -> Bool
                         }
 
-data Package        = Package {_pkgName :: Text, _pkgStatus :: Text}
+data Package        = Package { _pkgName    :: Maybe Text
+                              , _pkgStatus  :: Maybe Text
+                              }
   deriving (Show, Eq)
 
+defPackage :: Package
+defPackage          = Package {_pkgName = Nothing, _pkgStatus = Nothing}
+
+instance Monoid Package where
+    mempty          = defPackage
+    x `mappend` y   =     modifyA pkgName   (<|> viewA pkgName y)
+                        . modifyA pkgStatus (<|> viewA pkgStatus y)
+                        $ x
 instance FromJSON Package where
     parseJSON       = withObject "Package" $ \v -> Package
                         <$> v .: "pkgName"
@@ -258,15 +268,12 @@ instance ToJSON Package where
                              , "pkgStatus"  .= viewA pkgStatus x
                              ]
 
-pkgName :: LensA Package Text
+pkgName :: LensA Package (Maybe Text)
 pkgName f z@(Package {_pkgName = x})
                     = fmap (\x' -> z{_pkgName = x'}) (f x)
-pkgStatus :: LensA Package Text
+pkgStatus :: LensA Package (Maybe Text)
 pkgStatus f z@(Package {_pkgStatus = x})
                     = fmap (\x' -> z{_pkgStatus = x'}) (f x)
-defPackage :: Package
-defPackage          = Package {_pkgName = "", _pkgStatus = ""}
-
 
 -- * Filters.
 -- $filters
@@ -366,9 +373,9 @@ packageOpts         = liftA2 (&&)
     readParser :: Opt.ReadM (A.Parser Text)
     readParser      = Opt.eitherReader (return . A.string . T.pack)
     pkgF :: [A.Parser Text] -> Package -> Bool
-    pkgF ps         = byField pkgName   (A.choice ps <* A.endOfInput)
+    pkgF ps         = byField (viewA pkgName)   (A.choice ps <* A.endOfInput)
     statusF :: [A.Parser Text] -> Package -> Bool
-    statusF ps      = byField pkgStatus (A.choice ps <* A.endOfInput)
+    statusF ps      = byField (viewA pkgStatus) (A.choice ps <* A.endOfInput)
 
 
 -- * System.
@@ -401,8 +408,9 @@ parseFilePath :: A.Parser FilePath
 parseFilePath       = fromText <$> parseWord
 
 -- | Parser '${Status}' line. May be preceded by spaces.
-parseStatus :: A.Parser Text
-parseStatus         = T.unwords <$> A.count 3 (A.skipSpace *> parseWord)
+parseStatus :: A.Parser (Maybe Text)
+parseStatus         = Just . T.unwords
+                        <$> A.count 3 (A.skipSpace *> parseWord)
 
 -- | Parse @${Conffiles}@'s line. Requires exactly one space at the beginning.
 parseConffile :: A.Parser (FilePath, Hash Loaded)
@@ -411,10 +419,10 @@ parseConffile       = (,) <$> (A.space *> parseFilePath) <*> parseLoaded
 
 -- | Parse @${Package} ${Status}@ line. @${Status}@ part is optional.
 parsePackage :: A.Parser Package
-parsePackage        = Package <$> (T.cons <$> A.satisfy (not . isSpace)
-                                          <*> parseWord)
-                              <*> A.option "" parseStatus
-                      <|> fail "Can't parse '${Package} ${Status}'."
+parsePackage        =
+    Package <$> (Just <$> parseWord)
+            <*> A.option Nothing parseStatus
+        <|> fail "Can't parse '${Package} ${Status}'."
 
 -- | Calculate md5 hash of a file.
 md5sum :: FilePath -> P (Hash Computed)
@@ -599,7 +607,7 @@ main_3              =
 -- * Utils.
 -- $utils
 
--- | Parse non-empty string (may be) preceeded by spaces.
+-- | Parse non-empty string (may /not/ be preceded by spaces).
 parseWord :: A.Parser Text
 parseWord           = A.takeWhile1 (not . isSpace)
 
@@ -650,12 +658,13 @@ maybeList xs
 -- | Predicate working on a specified (using 'LensA') field of a value and
 -- using an 'A.Parser' to match field with (parser must match a field
 -- _completely_).
-byField ::    LensA a Text  -- ^ Lens to field.
-           -> A.Parser Text -- ^ Parser to try.
-           -> a             -- ^ Value to work on.
+byField ::    (a -> Maybe Text) -- ^ Lens to field.
+           -> A.Parser Text     -- ^ Parser to try.
+           -> a                 -- ^ Value to work on.
            -> Bool
-byField l p         = either (const False) (const True)
-                        . A.parseOnly p . viewA l
+byField f p z       = either (const False) (const True) $ do
+                        x <- liftMaybe (f z)
+                        A.parseOnly p x
 
 whenDef :: Monad m => Bool -> a -> m a -> m a
 whenDef b y mx
