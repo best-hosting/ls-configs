@@ -391,11 +391,12 @@ packageOpts         = liftA2 (&&)
   where
     readParser :: Opt.ReadM (A.Parser Text)
     readParser      = Opt.eitherReader (return . A.string . T.pack)
+    viewM :: Monoid b => LensA a (Maybe b) -> a -> b
+    viewM l         = fromMaybe mempty . viewA l
     pkgF :: [A.Parser Text] -> Package -> Bool
-    pkgF ps         = byField (viewA pkgName)   (A.choice ps <* A.endOfInput)
+    pkgF ps         = byField (viewM pkgName)   (A.choice ps <* A.endOfInput)
     statusF :: [A.Parser Text] -> Package -> Bool
-    statusF ps      = byField (viewA pkgStatus) (A.choice ps <* A.endOfInput)
-
+    statusF ps      = byField (viewM pkgStatus) (A.choice ps <* A.endOfInput)
 
 -- * System.
 -- $system
@@ -687,13 +688,12 @@ maybeList xs
 -- | Predicate working on a specified (using 'LensA') field of a value and
 -- using an 'A.Parser' to match field with (parser must match a field
 -- _completely_).
-byField ::    (a -> Maybe Text) -- ^ Lens to field.
-           -> A.Parser Text     -- ^ Parser to try.
-           -> a                 -- ^ Value to work on.
+byField ::    (a -> Text)   -- ^ Lens to field.
+           -> A.Parser Text -- ^ Parser to try.
+           -> a             -- ^ Value to work on.
            -> Bool
-byField f p z       = either (const False) (const True) $ do
-                        x <- liftMaybe (f z)
-                        A.parseOnly p x
+byField f p         = either (const False) (const True)
+                        . A.parseOnly p . f
 
 whenDef :: Monad m => Bool -> a -> m a -> m a
 whenDef b y mx
