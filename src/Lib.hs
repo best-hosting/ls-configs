@@ -139,8 +139,8 @@ data CInfo          = FileInfo
 instance Monoid CInfo where
     mempty          = defFileInfo
     x `mappend` y   =
-          modifyA fileHash     (<|> viewA fileHash y)
-        . modifyA loadedHashes (viewA loadedHashes y ++)
+          modifyA fileHash       (<|> viewA fileHash y)
+        . modifyA loadedHashes   (viewA loadedHashes y ++)
         . modifyA symLinkTargets (`mappend` viewA symLinkTargets y)
         . modifyA package        (`mappend` viewA package y)
         $ x
@@ -224,16 +224,20 @@ allObsolete x       = fromMaybe [] $ do
 
 -- | Compute hash for all files in 'ConfMap'.
 compute :: forall e m. (IsString e, MonadError e m, Alternative m) =>
-           (FilePath -> m (Hash Computed)) -> ConfMap -> m ConfMap
-compute hash z0     = M.foldr go (return z0) z0
+              (CInfo -> FilePath)                 -- ^ Function to obtain file path.
+           -> LensA CInfo (Maybe (Hash Computed)) -- ^ Lens to field to compute.
+           -> (FilePath -> m (Hash Computed))     -- ^ Function for computing.
+           -> ConfMap -> m ConfMap
+compute f l hash z0 = foldr go (return z0) z0
   where
     go :: (IsString e, MonadError e m, Alternative m) =>
           CInfo -> m ConfMap -> m ConfMap
     go x mz         = do
           z  <- mz
-          let k = viewA filePath x
-          x' <- maybeUpdate fileHash (hash k) x <|> return x
-          return (M.adjust (const x') k z)
+          let k = f x
+          x' <- maybeUpdate l (hash k) x <|> return x
+          return (M.adjust (const x') (getKey x) z)
+          -- !!!
 
 -- | If field is `Nothing` try to evaluate supplied monadic value to get a new
 -- value.
@@ -242,7 +246,13 @@ maybeUpdate :: (IsString e, MonadError e m, Alternative m) =>
 maybeUpdate l mh    = modifyAA l (\w -> Just <$> (liftMaybe w <|> mh))
 
 -- | Map for storing information about configs.
-type ConfMap        = M.Map FilePath CInfo
+type ConfMap        = M.Map Key CInfo
+
+newtype Key         = Key FilePath
+  deriving (Eq, Ord)
+
+getKey :: CInfo -> Key
+getKey              = Key . viewA filePath
 
 -- | Program own config.
 data Config         = Config
@@ -488,7 +498,8 @@ loadDpkg s z    = foldIO s $ FoldM (\z ml -> runIO (liftEither ml >>= go z))
                                 . setA package pkg
                                 . modifyA loadedHashes (w' :)
                                 $ mempty
-                      in  M.adjust (`mappend` x) k
+                      in  M.adjust (`mappend` x) (getKey x)
+-- !!!
 
 lstreeNoDeref :: FilePath -> Shell FilePath
 lstreeNoDeref p     = do
@@ -507,12 +518,13 @@ readEtc x z         = foldIO x (FoldM go (return z) return)
         let v = setA filePath xf defFileInfo
         xt <- lstat xf
         if isDirectory xt
+        -- !!!
           then return z
           else do
             v' <- whenDef (isSymbolicLink xt) v $ runIO $ do
                     y <- readSymbolicLink xf
                     return (setA symLinkTargets (M.fromList [(0, y)]) v)
-            return $ M.insert (viewA filePath v') v' z
+            return $ M.insert (getKey v') v' z
 
 opts :: Opt.Parser Config
 opts                = Config
@@ -531,7 +543,7 @@ opts                = Config
                 <> Opt.metavar "FILE"
                 <> Opt.help "Store db to file.")
         )
-    <*> pure "/etc"
+    <*> pure "/etc/"
     <*> hashesListOpts
     <*> hashFilterOpts
     <*> fileTypeOpts
@@ -556,7 +568,7 @@ loadDb etc mf       = flip catchError def $ do
       then throwError "Db file does not exist."
       else do
         xs <- liftIO (B.readFile (F.encodeString db)) >>= liftMaybe . decode
-        return $ M.fromList . map (\x -> (viewA filePath x, x)) $ xs
+        return $ M.fromList . map (\x -> (getKey x, x)) $ xs
   where
     def :: (MonadError e m, IsString e, MonadIO m) => e -> m ConfMap
     def _           = readEtc (lstreeNoDeref etc) M.empty
@@ -571,10 +583,11 @@ work Config { dpkgOutput        = dpkg
             , packageFilter     = pkf
             }       = do
     xm0 <- loadDb etc db
-    ym0 <- loadDpkg dpkg xm0 >>= compute md5sum
+    ym0 <- loadDpkg dpkg xm0 >>= compute (viewA filePath) fileHash md5sum
     saveDb db ym0
     let ym = M.filter (eq hs <&&> ft <&&> pf) ym0
     liftIO $ mapM_ print (M.elems . M.map (viewA filePath) $ ym)
+    -- !!!
   where
     -- | Convert 'Package -> Bool' to 'CInfo -> Bool'.
     pf :: CInfo -> Bool
