@@ -205,3 +205,10 @@ FilePath "test/etc/network/if-up.d/wpasupplicant"
 >>>2
 >>>= 0
 
+# 17. Finalize. Revert back permissions, so `git` won't complain.
+chmod 600 "test/etc/at.deny"; chmod 600 "test/etc/default/cacerts"
+<<<
+>>>
+>>>2
+>>>=0
+
