@@ -2,3 +2,4 @@
 *.tmp
 [0-9].txt
 tmp/
+test.db

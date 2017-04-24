@@ -127,6 +127,7 @@ data CInfo          = FileInfo
                         { _filePath         :: FilePath
                         , _fileHash         :: Maybe (Hash Computed)
                             -- ^ Hash of file (or file pointed by symlink).
+                        , _targetFileHash   :: Maybe (Hash Computed)
                         , _loadedHashes     :: [Hash Loaded]
                             -- ^ Loaded hashes for file name.
                         , _symLinkTargets   :: M.Map Int FilePath
@@ -136,10 +137,20 @@ data CInfo          = FileInfo
                         }
   deriving (Show, Eq)
 
+instance Monoid CInfo where
+    mempty          = defFileInfo
+    x `mappend` y   =
+          modifyA fileHash       (<|> viewA fileHash y)
+        . modifyA loadedHashes   (viewA loadedHashes y ++)
+        . modifyA symLinkTargets (`mappend` viewA symLinkTargets y)
+        . modifyA package        (`mappend` viewA package y)
+        $ x
+
 instance FromJSON CInfo where
     parseJSON       = withObject "FileInfo" $ \v -> FileInfo
                         <$> (F.decodeString <$> v .: "filePath")
                         <*> v .: "fileHash"
+                        <*> v .: "targetFileHash"
                         <*> v .: "loadedHashes"
                         <*> (M.map F.decodeString <$> v .: "symLinkTargets")
                         <*> v .: "package"
@@ -147,6 +158,7 @@ instance ToJSON CInfo where
     toJSON x        = object
         [ "filePath"       .= F.encodeString (viewA filePath x)
         , "fileHash"       .= viewA fileHash x
+        , "targetFileHash" .= viewA targetFileHash x
         , "loadedHashes"   .= viewA loadedHashes x
         , "symLinkTargets" .= M.map F.encodeString (viewA symLinkTargets x)
         , "package"        .= viewA package x
@@ -157,6 +169,7 @@ defFileInfo :: CInfo
 defFileInfo         = FileInfo
                         { _filePath         = ""
                         , _fileHash         = Nothing
+                        , _targetFileHash   = Nothing
                         , _loadedHashes     = []
                         , _symLinkTargets   = M.empty
                         , _package          = defPackage
@@ -169,6 +182,9 @@ filePath f z@(FileInfo {_filePath = x})
 fileHash :: LensA CInfo (Maybe (Hash Computed))
 fileHash f z@(FileInfo {_fileHash = x})
                     = fmap (\x' -> z{_fileHash = x'}) (f x)
+targetFileHash :: LensA CInfo (Maybe (Hash Computed))
+targetFileHash f z@(FileInfo {_targetFileHash = x})
+                    = fmap (\x' -> z{_targetFileHash = x'}) (f x)
 -- | Lens from 'CInfo' to 'Loaded' file hashes.
 loadedHashes :: LensA CInfo [Hash Loaded]
 loadedHashes f z@(FileInfo {_loadedHashes = x})
@@ -215,16 +231,20 @@ allObsolete x       = fromMaybe [] $ do
 
 -- | Compute hash for all files in 'ConfMap'.
 compute :: forall e m. (IsString e, MonadError e m, Alternative m) =>
-           (FilePath -> m (Hash Computed)) -> ConfMap -> m ConfMap
-compute hash z0     = M.foldr go (return z0) z0
+              (CInfo -> FilePath)                 -- ^ Function to obtain file path.
+           -> LensA CInfo (Maybe (Hash Computed)) -- ^ Lens to field to compute.
+           -> (FilePath -> m (Hash Computed))     -- ^ Function for computing.
+           -> ConfMap -> m ConfMap
+compute f l hash z0 = foldr go (return z0) z0
   where
     go :: (IsString e, MonadError e m, Alternative m) =>
           CInfo -> m ConfMap -> m ConfMap
     go x mz         = do
           z  <- mz
-          let k = viewA filePath x
-          x' <- maybeUpdate fileHash (hash k) x <|> return x
-          return (M.adjust (const x') k z)
+          let k = f x
+          x' <- maybeUpdate l (hash k) x <|> return x
+          return (M.adjust (const x') (getKey x) z)
+          -- !!!
 
 -- | If field is `Nothing` try to evaluate supplied monadic value to get a new
 -- value.
@@ -233,22 +253,40 @@ maybeUpdate :: (IsString e, MonadError e m, Alternative m) =>
 maybeUpdate l mh    = modifyAA l (\w -> Just <$> (liftMaybe w <|> mh))
 
 -- | Map for storing information about configs.
-type ConfMap        = M.Map FilePath CInfo
+type ConfMap        = M.Map Key CInfo
+
+newtype Key         = Key FilePath
+  deriving (Eq, Ord)
+
+getKey :: CInfo -> Key
+getKey              = Key . viewA filePath
 
 -- | Program own config.
 data Config         = Config
                         { dpkgOutput        :: Shell (Either Line Line)
                         , dbFile            :: Maybe FilePath
                         , etcPath           :: FilePath
+                        , targetPath        :: Maybe FilePath
                         , hashesList        :: CInfo -> [Md5]
                         , hashFilter        :: (CInfo -> [Md5]) -> CInfo -> Bool
                         , fileTypeFilter    :: CInfo -> Bool
                         , packageFilter     :: Package -> Bool
+                        , targetFilter      :: CInfo -> Bool
                         }
 
-data Package        = Package {_pkgName :: Text, _pkgStatus :: Text}
+data Package        = Package { _pkgName    :: Maybe Text
+                              , _pkgStatus  :: Maybe Text
+                              }
   deriving (Show, Eq)
 
+defPackage :: Package
+defPackage          = Package {_pkgName = Nothing, _pkgStatus = Nothing}
+
+instance Monoid Package where
+    mempty          = defPackage
+    x `mappend` y   =     modifyA pkgName   (<|> viewA pkgName y)
+                        . modifyA pkgStatus (<|> viewA pkgStatus y)
+                        $ x
 instance FromJSON Package where
     parseJSON       = withObject "Package" $ \v -> Package
                         <$> v .: "pkgName"
@@ -258,20 +296,38 @@ instance ToJSON Package where
                              , "pkgStatus"  .= viewA pkgStatus x
                              ]
 
-pkgName :: LensA Package Text
+pkgName :: LensA Package (Maybe Text)
 pkgName f z@(Package {_pkgName = x})
                     = fmap (\x' -> z{_pkgName = x'}) (f x)
-pkgStatus :: LensA Package Text
+pkgStatus :: LensA Package (Maybe Text)
 pkgStatus f z@(Package {_pkgStatus = x})
                     = fmap (\x' -> z{_pkgStatus = x'}) (f x)
-defPackage :: Package
-defPackage          = Package {_pkgName = "", _pkgStatus = ""}
-
 
 -- * Filters.
 -- $filters
 --
 -- Filters for 'ConfMap' working on 'CInfo' values.
+
+-- | Options related to target directory.
+targetFilterOpts :: Opt.Parser (CInfo -> Bool)
+targetFilterOpts    =
+        Opt.flag' (cmpBy (==))
+            (  Opt.long "target-equal"
+            <> Opt.help
+                    ("Show source files, which are the same in target."))
+    <|> Opt.flag' (fromMaybe False <$> cmpBy (liftA2 (/=)))
+            (  Opt.long "target-differ"
+            <> Opt.help
+                    ("Show source files differing from target ones."))
+    <|> Opt.flag' (isNothing . viewA targetFileHash)
+            (  Opt.long "target-missed"
+            <> Opt.help
+                    ("Show source files missed in target."))
+    <|> pure (fromMaybe True <$> cmpBy (liftA2 (/=)))
+  where
+    cmpBy :: (Maybe (Hash Computed) -> Maybe (Hash Computed) -> b)
+           -> CInfo -> b
+    cmpBy eq        = eq <$> viewA fileHash <*> viewA targetFileHash
 
 -- | Options for generating list of hashes to filter from.
 hashesListOpts :: Opt.Parser (CInfo -> [Md5])
@@ -365,11 +421,12 @@ packageOpts         = liftA2 (&&)
   where
     readParser :: Opt.ReadM (A.Parser Text)
     readParser      = Opt.eitherReader (return . A.string . T.pack)
+    viewM :: Monoid b => LensA a (Maybe b) -> a -> b
+    viewM l         = fromMaybe mempty . viewA l
     pkgF :: [A.Parser Text] -> Package -> Bool
-    pkgF ps         = byField pkgName   (A.choice ps <* A.endOfInput)
+    pkgF ps         = byField (viewM pkgName)   (A.choice ps <* A.endOfInput)
     statusF :: [A.Parser Text] -> Package -> Bool
-    statusF ps      = byField pkgStatus (A.choice ps <* A.endOfInput)
-
+    statusF ps      = byField (viewM pkgStatus) (A.choice ps <* A.endOfInput)
 
 -- * System.
 -- $system
@@ -401,8 +458,9 @@ parseFilePath :: A.Parser FilePath
 parseFilePath       = fromText <$> parseWord
 
 -- | Parser '${Status}' line. May be preceded by spaces.
-parseStatus :: A.Parser Text
-parseStatus         = T.unwords <$> A.count 3 (A.skipSpace *> parseWord)
+parseStatus :: A.Parser (Maybe Text)
+parseStatus         = Just . T.unwords
+                        <$> A.count 3 (A.skipSpace *> parseWord)
 
 -- | Parse @${Conffiles}@'s line. Requires exactly one space at the beginning.
 parseConffile :: A.Parser (FilePath, Hash Loaded)
@@ -411,10 +469,10 @@ parseConffile       = (,) <$> (A.space *> parseFilePath) <*> parseLoaded
 
 -- | Parse @${Package} ${Status}@ line. @${Status}@ part is optional.
 parsePackage :: A.Parser Package
-parsePackage        = Package <$> (T.cons <$> A.satisfy (not . isSpace)
-                                          <*> parseWord)
-                              <*> A.option "" parseStatus
-                      <|> fail "Can't parse '${Package} ${Status}'."
+parsePackage        =
+    Package <$> (Just <$> parseWord)
+            <*> A.option Nothing parseStatus
+        <|> fail "Can't parse '${Package} ${Status}'."
 
 -- | Calculate md5 hash of a file.
 md5sum :: FilePath -> P (Hash Computed)
@@ -452,10 +510,11 @@ inprocParse p cmd args inp  = ExceptT (inprocWithErr cmd args inp) >>= parse p
 -- | Load @dpkg-query@ output into 'ConfMap' for files /already/ present in
 -- 'ConfMap'.
 loadDpkg :: MonadIO m =>
-               Shell (Either Line Line)         -- ^ Input.
-            -> ConfMap                          -- ^ Add parsed values here.
+               FilePath                 -- ^ Path prefix (`/etc` usually).
+            -> Shell (Either Line Line) -- ^ Input.
+            -> ConfMap                  -- ^ Add parsed values here.
             -> m ConfMap
-loadDpkg s z    = foldIO s $ FoldM (\z ml -> runIO (liftEither ml >>= go z))
+loadDpkg etc s z    = foldIO s $ FoldM (\z ml -> runIO (liftEither ml >>= go z))
                                    (return (defPackage, z))
                                    (return . snd)
   where
@@ -466,9 +525,15 @@ loadDpkg s z    = foldIO s $ FoldM (\z ml -> runIO (liftEither ml >>= go z))
       | otherwise   =     parse ((pkg, ) . flip adj zm  <$> parseConffile) y
                       <|> parse (                (, zm) <$> parsePackage)  y
       where
+        -- | `dpkg` output should always contain configs in `/etc`, so
+        -- hardcode it here.
         adj :: (FilePath, Hash Loaded) -> ConfMap -> ConfMap
-        adj (k, w') = flip M.adjust k
-                        $ setA package pkg . modifyA loadedHashes (w' :)
+        adj (k, w') = let x = setA filePath (replacePrefix etc "" k)
+                                . setA package pkg
+                                . modifyA loadedHashes (w' :)
+                                $ mempty
+                      in  M.adjust (`mappend` x) (getKey x)
+-- !!!
 
 lstreeNoDeref :: FilePath -> Shell FilePath
 lstreeNoDeref p     = do
@@ -479,20 +544,21 @@ lstreeNoDeref p     = do
       else return x
 
 -- | Add all files from `/etc` to db.
-readEtc :: MonadIO m => Shell FilePath -> ConfMap -> m ConfMap
-readEtc x z         = foldIO x (FoldM go (return z) return)
+readEtc :: MonadIO m => FilePath -> Shell FilePath -> ConfMap -> m ConfMap
+readEtc etc x z     = foldIO x (FoldM go (return z) return)
   where
     go :: MonadIO m => ConfMap -> FilePath -> m ConfMap
     go z xf         = do
-        let v = setA filePath xf defFileInfo
+        let v = setA filePath (replacePrefix etc "" xf) mempty
         xt <- lstat xf
         if isDirectory xt
+        -- !!!
           then return z
           else do
             v' <- whenDef (isSymbolicLink xt) v $ runIO $ do
                     y <- readSymbolicLink xf
                     return (setA symLinkTargets (M.fromList [(0, y)]) v)
-            return $ M.insert (viewA filePath v') v' z
+            return $ M.insert (getKey v') v' z
 
 opts :: Opt.Parser Config
 opts                = Config
@@ -505,20 +571,32 @@ opts                = Config
                 <> Opt.help "Read `dpkg-query` output from file.")
             <|> pure systemConfsWithPkg
         )
-    <*> (   Opt.option (Opt.eitherReader (fmap Just . readFilePath))
+    <*> (   Opt.option (Opt.eitherReader readFilePath)
                 (  Opt.long "db"
                 <> Opt.value Nothing
                 <> Opt.metavar "FILE"
                 <> Opt.help "Store db to file.")
         )
-    <*> pure "/etc"
+    <*> (fromMaybe "/etc/"
+            <$> Opt.option (Opt.eitherReader readFilePath)
+                (  Opt.long "source"
+                <> Opt.value Nothing
+                <> Opt.metavar "DIR"
+                <> Opt.help "Store db to file.")
+        )
+    <*> (Opt.option (Opt.eitherReader readFilePath)
+            (  Opt.long "target"
+            <> Opt.value Nothing
+            <> Opt.metavar "DIR"
+            <> Opt.help ("Directory to compare source files with.")))
     <*> hashesListOpts
     <*> hashFilterOpts
     <*> fileTypeOpts
     <*> packageOpts
+    <*> targetFilterOpts
   where
-    readFilePath :: String -> Either String FilePath
-    readFilePath          = Right . fromText . fromString
+    readFilePath :: String -> Either String (Maybe FilePath)
+    readFilePath          = Right . Just . fromText . fromString
 
 -- | Convert db to json and write to file.
 saveDb :: Maybe FilePath -> ConfMap -> P ()
@@ -536,25 +614,34 @@ loadDb etc mf       = flip catchError def $ do
       then throwError "Db file does not exist."
       else do
         xs <- liftIO (B.readFile (F.encodeString db)) >>= liftMaybe . decode
-        return $ M.fromList . map (\x -> (viewA filePath x, x)) $ xs
+        return $ M.fromList . map (\x -> (getKey x, x)) $ xs
   where
     def :: (MonadError e m, IsString e, MonadIO m) => e -> m ConfMap
-    def _           = readEtc (lstreeNoDeref etc) M.empty
+    def _           = readEtc etc (lstreeNoDeref etc) M.empty
 
 work :: Config -> P ()
 work Config { dpkgOutput        = dpkg
             , dbFile            = db
             , etcPath           = etc
+            , targetPath        = mtrg
             , hashesList        = hs
             , hashFilter        = eq
             , fileTypeFilter    = ft
             , packageFilter     = pkf
+            , targetFilter      = trf
             }       = do
     xm0 <- loadDb etc db
-    ym0 <- loadDpkg dpkg xm0 >>= compute md5sum
+    xm1 <- loadDpkg "/etc/" dpkg xm0 >>=
+           compute ((etc </>) . viewA filePath) fileHash md5sum
+    ym0 <- maybe (return xm1)
+                 (\trg -> compute ((trg </>) . viewA filePath)
+                            targetFileHash
+                            md5sum xm1)
+                 mtrg
     saveDb db ym0
-    let ym = M.filter (eq hs <&&> ft <&&> pf) ym0
-    liftIO $ mapM_ print (M.elems . M.map (viewA filePath) $ ym)
+    let ym = M.filter (trf <&&> eq hs <&&> ft <&&> pf) ym0
+    liftIO $ mapM_ print (M.elems . M.map ((etc </>) . viewA filePath) $ ym)
+    -- !!!
   where
     -- | Convert 'Package -> Bool' to 'CInfo -> Bool'.
     pf :: CInfo -> Bool
@@ -599,7 +686,7 @@ main_3              =
 -- * Utils.
 -- $utils
 
--- | Parse non-empty string (may be) preceeded by spaces.
+-- | Parse non-empty string (may /not/ be preceded by spaces).
 parseWord :: A.Parser Text
 parseWord           = A.takeWhile1 (not . isSpace)
 
@@ -621,7 +708,7 @@ ignoreError         = ignoreErrorDef mempty
 
 ignoreErrorDef :: (MonadError Line m, MonadIO m) => a -> m a -> m a
 ignoreErrorDef def  = flip catchError (\e -> stderrUtf8 e >> return def)
- 
+
 -- | Print utf8 error message correctly.
 stderrUtf8 :: MonadIO m => Line -> m ()
 stderrUtf8          = B.stderr . return . encodeUtf8 . linesToText . (: [])
@@ -650,15 +737,25 @@ maybeList xs
 -- | Predicate working on a specified (using 'LensA') field of a value and
 -- using an 'A.Parser' to match field with (parser must match a field
 -- _completely_).
-byField ::    LensA a Text  -- ^ Lens to field.
+byField ::    (a -> Text)   -- ^ Lens to field.
            -> A.Parser Text -- ^ Parser to try.
            -> a             -- ^ Value to work on.
            -> Bool
-byField l p         = either (const False) (const True)
-                        . A.parseOnly p . viewA l
+byField f p         = either (const False) (const True)
+                        . A.parseOnly p . f
 
 whenDef :: Monad m => Bool -> a -> m a -> m a
 whenDef b y mx
   | b               = mx
   | otherwise       = return y
+
+-- | Replace path prefix @old@ (starting and ending at path component
+-- boundaries) with @new@, if matched:
+--
+-- >    replacePrefix old new path
+replacePrefix ::   FilePath     -- ^ @Old@ path prefix to replace with.
+                -> FilePath     -- ^ @New@ path prefix to substitute to.
+                -> FilePath     -- ^ Path.
+                -> FilePath     -- ^ Resulting path.
+replacePrefix old new x  = maybe x (new </>) (stripPrefix old x)
 
