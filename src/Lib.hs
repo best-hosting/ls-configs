@@ -541,20 +541,26 @@ opts                = Config
                 <> Opt.help "Read `dpkg-query` output from file.")
             <|> pure systemConfsWithPkg
         )
-    <*> (   Opt.option (Opt.eitherReader (fmap Just . readFilePath))
+    <*> (   Opt.option (Opt.eitherReader readFilePath)
                 (  Opt.long "db"
                 <> Opt.value Nothing
                 <> Opt.metavar "FILE"
                 <> Opt.help "Store db to file.")
         )
-    <*> pure "/etc/"
+    <*> (fromMaybe "/etc/"
+            <$> Opt.option (Opt.eitherReader readFilePath)
+                (  Opt.long "source"
+                <> Opt.value Nothing
+                <> Opt.metavar "DIR"
+                <> Opt.help "Store db to file.")
+        )
     <*> hashesListOpts
     <*> hashFilterOpts
     <*> fileTypeOpts
     <*> packageOpts
   where
-    readFilePath :: String -> Either String FilePath
-    readFilePath          = Right . fromText . fromString
+    readFilePath :: String -> Either String (Maybe FilePath)
+    readFilePath          = Right . Just . fromText . fromString
 
 -- | Convert db to json and write to file.
 saveDb :: Maybe FilePath -> ConfMap -> P ()
@@ -587,7 +593,7 @@ work Config { dpkgOutput        = dpkg
             , packageFilter     = pkf
             }       = do
     xm0 <- loadDb etc db
-    ym0 <- loadDpkg etc dpkg xm0 >>=
+    ym0 <- loadDpkg "/etc/" dpkg xm0 >>=
            compute ((etc </>) . viewA filePath) fileHash md5sum
     saveDb db ym0
     let ym = M.filter (eq hs <&&> ft <&&> pf) ym0
