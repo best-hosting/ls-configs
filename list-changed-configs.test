@@ -1,12 +1,12 @@
 # 1. Prepare.
-rm -f test.db; chmod 000 "test/etc/at.deny"; chmod 000 "test/etc/default/cacerts"
+ rm -f test.db; chmod 000 "test/etc/at.deny"; chmod 000 "test/etc/default/cacerts"
 <<<
 >>>
 >>>2
 >>>=0
 
 # 2. Files, which were changed.
-./.stack-work/dist/i386-linux/Cabal-1.24.2.0/build/list-changed-configs-exe/list-changed-configs-exe --db test.db --source test/etc/ --changed --files
+cmd --db test.db --source test/etc/ --changed --files
 <<<
 >>>
 FilePath "test/etc/unburden-home-dir.list"
@@ -15,7 +15,7 @@ FilePath "test/etc/pam.d/su"
 >>>= 0
 
 # 3. Symlinks pointing to files, which were changed.
-./.stack-work/dist/i386-linux/Cabal-1.24.2.0/build/list-changed-configs-exe/list-changed-configs-exe --db test.db --source test/etc/ --changed --symlinks
+cmd --db test.db --source test/etc/ --changed --symlinks
 <<<
 >>>
 FilePath "test/etc/vim/gvimrc"
@@ -24,7 +24,7 @@ FilePath "test/etc/zsh/zshenv"
 >>>= 0
 
 # 4. Files, which hash can't be computed.
-./.stack-work/dist/i386-linux/Cabal-1.24.2.0/build/list-changed-configs-exe/list-changed-configs-exe --db test.db --source test/etc/ --errors-read --files
+cmd --db test.db --source test/etc/ --errors-read --files
 <<<
 >>>
 FilePath "test/etc/at.deny"
@@ -33,7 +33,7 @@ FilePath "test/etc/default/cacerts"
 >>>= 0
 
 # 5. Symlinks pointing to files, which hash can't be computed.
-./.stack-work/dist/i386-linux/Cabal-1.24.2.0/build/list-changed-configs-exe/list-changed-configs-exe --db test.db --source test/etc/ --errors-read --symlinks
+cmd --db test.db --source test/etc/ --errors-read --symlinks
 <<<
 >>>
 FilePath "test/etc/resolv.conf"
@@ -42,7 +42,7 @@ FilePath "test/etc/dkms/template-dkms-mkdsc"
 >>>= 0
 
 # 6. Files, which are not stored in `dpkg` db.
-./.stack-work/dist/i386-linux/Cabal-1.24.2.0/build/list-changed-configs-exe/list-changed-configs-exe --db test.db --source test/etc/ --other --files
+cmd --db test.db --source test/etc/ --other --files
 <<<
 >>>
 FilePath "test/etc/bash.bashrc.orig"
@@ -62,7 +62,7 @@ FilePath "test/etc/zsh/zshenv.orig"
 >>>= 0
 
 # 7. Symlinks pointing to files, which are not stored in `dpkg` db.
-./.stack-work/dist/i386-linux/Cabal-1.24.2.0/build/list-changed-configs-exe/list-changed-configs-exe --db test.db --source test/etc/ --other --symlinks
+cmd --db test.db --source test/etc/ --other --symlinks
 <<<
 >>>
 FilePath "test/etc/resolv.conf"
@@ -75,7 +75,7 @@ FilePath "test/etc/network/if-up.d/wpasupplicant"
 >>>= 0
 
 # 8. Files matching obsolete hash.
-./.stack-work/dist/i386-linux/Cabal-1.24.2.0/build/list-changed-configs-exe/list-changed-configs-exe --db test.db --source test/etc/ --obsolete --files
+cmd --db test.db --source test/etc/ --obsolete --files
 <<<
 >>>
 FilePath "test/etc/etter.conf"
@@ -86,7 +86,7 @@ FilePath "test/etc/zsh/zprofile"
 >>>= 0
 
 # 9. Symlinks pointing to files matching obsolete hash.
-./.stack-work/dist/i386-linux/Cabal-1.24.2.0/build/list-changed-configs-exe/list-changed-configs-exe --db test.db --source test/etc/ --obsolete --symlinks
+cmd --db test.db --source test/etc/ --obsolete --symlinks
 <<<
 >>>
 FilePath "test/etc/apt/apt.conf.d/05aptitude"
@@ -96,7 +96,7 @@ FilePath "test/etc/zsh/zlogout"
 >>>= 0
 
 # 10. Unchanged files (hash matches to what is stored in `dpkg` db).
-./.stack-work/dist/i386-linux/Cabal-1.24.2.0/build/list-changed-configs-exe/list-changed-configs-exe --db test.db --source test/etc/ --stored --files
+cmd --db test.db --source test/etc/ --stored --files
 <<<
 >>>
 FilePath "test/etc/debian_version"
@@ -130,7 +130,7 @@ FilePath "test/etc/zsh/zshrc"
 >>>= 0
 
 # 11. Symlinks pointing unchanged files.
-./.stack-work/dist/i386-linux/Cabal-1.24.2.0/build/list-changed-configs-exe/list-changed-configs-exe --db test.db --source test/etc/ --stored --symlinks
+cmd --db test.db --source test/etc/ --stored --symlinks
 <<<
 >>>
 FilePath "test/etc/bash.bashrc"
@@ -142,7 +142,7 @@ FilePath "test/etc/zsh/zlogout"
 >>>= 0
 
 # 12. Unchanged files of installed packages.
-./.stack-work/dist/i386-linux/Cabal-1.24.2.0/build/list-changed-configs-exe/list-changed-configs-exe --db test.db --source test/etc/ --stored --package vim-common --package mutt --status 'install ok installed'
+cmd --db test.db --source test/etc/ --stored --package vim-common --package mutt --status 'install ok installed'
 <<<
 >>>
 FilePath "test/etc/Muttrc.d/charset.rc"
@@ -155,7 +155,7 @@ FilePath "test/etc/vim/vimrc"
 >>>= 0
 
 # 13. Symlinks pointing to unchanged files of deinstalled package.
-./.stack-work/dist/i386-linux/Cabal-1.24.2.0/build/list-changed-configs-exe/list-changed-configs-exe --db test.db --source test/etc/ --status 'deinstall ok config-files' --symlinks
+cmd --db test.db --source test/etc/ --status 'deinstall ok config-files' --symlinks
 <<<
 >>>
 FilePath "test/etc/apache2/sites-available/default"
@@ -164,7 +164,7 @@ FilePath "test/etc/apache2/sites-available/default-ssl"
 >>>= 0
 
 # 14. Unchanged files of deinstalled package.
-./.stack-work/dist/i386-linux/Cabal-1.24.2.0/build/list-changed-configs-exe/list-changed-configs-exe --db test.db --source test/etc/ --status 'deinstall ok config-files' --files
+cmd --db test.db --source test/etc/ --status 'deinstall ok config-files' --files
 <<<
 >>>
 FilePath "test/etc/apache2/apache2.conf"
@@ -173,7 +173,7 @@ FilePath "test/etc/bash_completion.d/apache2.2-common"
 >>>= 0
 
 # 15. Files with empty package (should match to `--other`).
-./.stack-work/dist/i386-linux/Cabal-1.24.2.0/build/list-changed-configs-exe/list-changed-configs-exe --db test.db --source test/etc/ --package "" --other --files
+cmd --db test.db --source test/etc/ --package "" --other --files
 <<<
 >>>
 FilePath "test/etc/bash.bashrc.orig"
@@ -193,7 +193,7 @@ FilePath "test/etc/zsh/zshenv.orig"
 >>>= 0
 
 # 16. Symlinks pointing to files with empty package (should match to `--other`).
-./.stack-work/dist/i386-linux/Cabal-1.24.2.0/build/list-changed-configs-exe/list-changed-configs-exe --db test.db --source test/etc/ --package "" --other --symlinks
+cmd --db test.db --source test/etc/ --package "" --other --symlinks
 <<<
 >>>
 FilePath "test/etc/resolv.conf"
@@ -206,7 +206,7 @@ FilePath "test/etc/network/if-up.d/wpasupplicant"
 >>>= 0
 
 # 17. Tracked files and symlinks, which are the same in source and target.
-./.stack-work/dist/i386-linux/Cabal-1.24.2.0/build/list-changed-configs-exe/list-changed-configs-exe --db test.db --source test/etc/ --stored --obsolete --target test/etc-dst/ --target-equal
+cmd --db test.db --source test/etc/ --stored --obsolete --target test/etc-dst/ --target-equal
 <<<
 >>>
 FilePath "test/etc/bash.bashrc"
@@ -241,7 +241,7 @@ FilePath "test/etc/zsh/zshrc"
 >>>= 0
 
 # 18. Untracked files and symlinks, which are the same in source and target.
-./.stack-work/dist/i386-linux/Cabal-1.24.2.0/build/list-changed-configs-exe/list-changed-configs-exe --db test.db --source test/etc/ --other --target test/etc-dst/ --target-equal
+cmd --db test.db --source test/etc/ --other --target test/etc-dst/ --target-equal
 <<<
 >>>
 FilePath "test/etc/bash.bashrc.orig"
@@ -263,7 +263,7 @@ FilePath "test/etc/zsh/zshenv.orig"
 >>>= 0
 
 # 19. Unchanged files and symlinks, which are different in source and target.
-./.stack-work/dist/i386-linux/Cabal-1.24.2.0/build/list-changed-configs-exe/list-changed-configs-exe --db test.db --source test/etc/ --stored --obsolete --target test/etc-dst/ --target-differ
+cmd --db test.db --source test/etc/ --stored --obsolete --target test/etc-dst/ --target-differ
 <<<
 >>>
 FilePath "test/etc/apache2/sites-available/default-ssl"
@@ -273,7 +273,7 @@ FilePath "test/etc/vim/vimrc"
 >>>= 0
 
 # 20. Untracked files and symlinks, which are different in source and target.
-./.stack-work/dist/i386-linux/Cabal-1.24.2.0/build/list-changed-configs-exe/list-changed-configs-exe --db test.db --source test/etc/ --other --target test/etc-dst/ --target-differ
+cmd --db test.db --source test/etc/ --other --target test/etc-dst/ --target-differ
 <<<
 >>>
 FilePath "test/etc/modules"
@@ -282,7 +282,7 @@ FilePath "test/etc/apt/05aptitude"
 >>>= 0
 
 # 21. Unchanged files and symlinks, which are missed in the target.
-./.stack-work/dist/i386-linux/Cabal-1.24.2.0/build/list-changed-configs-exe/list-changed-configs-exe --db test.db --source test/etc/ --stored --obsolete --target test/etc-dst/ --target-missed
+cmd --db test.db --source test/etc/ --stored --obsolete --target test/etc-dst/ --target-missed
 <<<
 >>>
 FilePath "test/etc/bash_completion"
@@ -293,7 +293,7 @@ FilePath "test/etc/zsh/zlogin"
 >>>= 0
 
 # 22. Untracked files and symlinks, which are missed in the target.
-./.stack-work/dist/i386-linux/Cabal-1.24.2.0/build/list-changed-configs-exe/list-changed-configs-exe --db test.db --source test/etc/ --other --target test/etc-dst/ --target-missed
+cmd --db test.db --source test/etc/ --other --target test/etc-dst/ --target-missed
 <<<
 >>>
 FilePath "test/etc/nsswitch.conf"
@@ -304,7 +304,7 @@ FilePath "test/etc/network/if-down.d/wpasupplicant"
 >>>= 0
 
 # 23. Untracked files and symlinks, which are missed in the target.
-./.stack-work/dist/i386-linux/Cabal-1.24.2.0/build/list-changed-configs-exe/list-changed-configs-exe --db test.db --changed --source test/etc/ --target test/etc-dst/ --target-missed
+cmd --db test.db --changed --source test/etc/ --target test/etc-dst/ --target-missed
 <<<
 >>>
 FilePath "test/etc/pam.d/su"
@@ -313,7 +313,7 @@ FilePath "test/etc/zsh/zshenv"
 >>>= 0
 
 # End. Finalize. Revert back permissions, so `git` won't complain.
-chmod 600 "test/etc/at.deny"; chmod 600 "test/etc/default/cacerts"
+ chmod 600 "test/etc/at.deny"; chmod 600 "test/etc/default/cacerts"
 <<<
 >>>
 >>>2
