@@ -50,8 +50,9 @@ test-suite list-changed-configs-test
   hs-source-dirs:      test
   main-is:             Spec.hs
   build-depends:       base
-                     , list-changed-configs
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+                       , text
+                       , turtle
+  ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 
 source-repository head
