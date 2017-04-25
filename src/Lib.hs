@@ -367,6 +367,11 @@ hashFilterOpts      =
             (   Opt.long "errors-orphaned"
             <>  Opt.help
                     "Show files does not belonging to any package.")
+    <|> Opt.flag' (const (isJust . viewAmaybe computed))
+            (   Opt.long "all"
+            <>  Opt.help
+                    ("Do not filter files by computed hash,"
+                    ++ " but still require, that i _can_ compute hash."))
     <|> pure (viewAmaybe computed `eq`)
   where
     -- | Generalize an `elem`. Empty list is a failure (default value is
