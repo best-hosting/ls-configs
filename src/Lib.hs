@@ -270,6 +270,7 @@ data Config         = Config
                         , hashesList        :: CInfo -> [Md5]
                         , hashFilter        :: (CInfo -> [Md5]) -> CInfo -> Bool
                         , fileTypeFilter    :: CInfo -> Bool
+                        , fileFilter        :: Maybe FilePath
                         , packageFilter     :: Package -> Bool
                         , targetFilter      :: CInfo -> Bool
                         }
@@ -493,6 +494,23 @@ readSymbolicLink xf = do
     y <- liftIO $ F.readSymbolicLink (T.unpack x)
     return (fromText (T.pack y))
 
+-- | Make a predicate from a list of excluded files read from a file.
+excludeFiles :: Maybe FilePath -> P (CInfo -> Bool)
+excludeFiles mf     = flip catchError def $ do
+    f <- liftMaybe mf
+    b <- testfile f
+    if (not b)
+      then throwError "Exclude file does not exist."
+      else fold (readExcludes f) (Fold mappend mempty (fmap getAll))
+  where
+    def :: MonadError e m => e -> m (CInfo -> Bool)
+    def _           = return (const True)
+    -- | Read file with excludes and build predicates from read filenames.
+    readExcludes :: FilePath -> Shell (CInfo -> All)
+    readExcludes f  = do
+        x <- fromText . lineToText <$> input f
+        return (All <$> (/= x) . viewA filePath)
+
 
 -- * Main.
 -- $main
@@ -597,6 +615,14 @@ opts                = Config
     <*> hashesListOpts
     <*> hashFilterOpts
     <*> fileTypeOpts
+    <*> (Opt.option (Opt.eitherReader readFilePath)
+            (  Opt.long "filter"
+            <> Opt.value Nothing
+            <> Opt.metavar "FILE"
+            <> Opt.help
+                (   "Exclude filter file."
+                ++  " Pathes must match *exactly* "
+                ++  " and must be relative to source path.")))
     <*> packageOpts
     <*> targetFilterOpts
   where
@@ -632,6 +658,7 @@ work Config { dpkgOutput        = dpkg
             , hashesList        = hs
             , hashFilter        = eq
             , fileTypeFilter    = ft
+            , fileFilter        = mf
             , packageFilter     = pkf
             , targetFilter      = trf
             }       = do
@@ -644,7 +671,8 @@ work Config { dpkgOutput        = dpkg
                             targetFileHash
                             md5sum xm1)
                  mtrg
-    let ym = M.filter (trf <&&> eq hs <&&> ft <&&> pf) ym0
+    excl <- excludeFiles mf
+    let ym = M.filter (excl <&&> trf <&&> eq hs <&&> ft <&&> pf) ym0
     liftIO $ mapM_ print (M.elems . M.map ((etc </>) . viewA filePath) $ ym)
     -- !!!
   where
@@ -763,4 +791,8 @@ replacePrefix ::   FilePath     -- ^ @Old@ path prefix to replace with.
                 -> FilePath     -- ^ Path.
                 -> FilePath     -- ^ Resulting path.
 replacePrefix old new x  = maybe x (new </>) (stripPrefix old x)
+
+-- | Lift 'Shell a' into 'P' monad.
+liftShell :: Shell a -> P a
+liftShell           = ExceptT . fmap Right
 

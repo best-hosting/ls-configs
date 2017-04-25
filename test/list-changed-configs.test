@@ -382,6 +382,33 @@ FilePath "test/etc/zsh/zshenv"
 >>>2
 >>>= 0
 
+# 26. All files and symlinks, which are different or missed in source and target with filter.
+cmd --db test.db --source test/etc/ --all --target test/etc-dst/ --filter test/filter.txt
+<<<
+>>>
+FilePath "test/etc/bash_completion"
+FilePath "test/etc/modules"
+FilePath "test/etc/Muttrc.d/gpg.rc"
+FilePath "test/etc/apache2/sites-available/default-ssl"
+FilePath "test/etc/apt/05aptitude"
+FilePath "test/etc/apt/apt.conf.d/05aptitude"
+FilePath "test/etc/bash_completion.d/apache2.2-common"
+FilePath "test/etc/zsh/zlogin"
+FilePath "test/etc/zsh/zshenv"
+>>>2
+>>>= 0
+
+# 27. Unchanged files of installed packages with filter.
+cmd --db test.db --source test/etc/ --stored --package vim-common --package mutt --status 'install ok installed' --filter test/filter.txt
+<<<
+>>>
+FilePath "test/etc/Muttrc.d/charset.rc"
+FilePath "test/etc/Muttrc.d/colors.rc"
+FilePath "test/etc/Muttrc.d/compressed-folders.rc"
+FilePath "test/etc/Muttrc.d/gpg.rc"
+>>>2
+>>>= 0
+
 # End. Finalize. Revert back permissions, so `git` won't complain.
  chmod 600 "test/etc/at.deny"; chmod 600 "test/etc/default/cacerts"
 <<<
