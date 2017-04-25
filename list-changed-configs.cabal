@@ -16,6 +16,12 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:       src
   exposed-modules:      Lib
+                        Sgf.System.Configs.Types
+                        Sgf.System.Configs.Common
+                        Sgf.System.Configs.Parser
+                        Sgf.System.Configs.System
+                        Sgf.System.Configs.Database
+                        Sgf.System.Configs.Options
   other-modules:        Sgf.Control.Lens
   build-depends:        base >= 4.7 && < 5
                         , turtle
