@@ -240,7 +240,57 @@ FilePath "test/etc/zsh/zshrc"
 >>>2
 >>>= 0
 
-# 18. Untracked files and symlinks, which are the same in source and target.
+# 18. All files and symlinks, which are the same in source and target.
+cmd --db test.db --source test/etc/ --all --target test/etc-dst/ --target-equal
+<<<
+>>>
+FilePath "test/etc/bash.bashrc"
+FilePath "test/etc/bash.bashrc.orig"
+FilePath "test/etc/debian_version"
+FilePath "test/etc/etter.conf"
+FilePath "test/etc/insserv.conf"
+FilePath "test/etc/shells"
+FilePath "test/etc/unburden-home-dir.list"
+FilePath "test/etc/Muttrc.d/charset.rc"
+FilePath "test/etc/Muttrc.d/colors.rc"
+FilePath "test/etc/Muttrc.d/compressed-folders.rc"
+FilePath "test/etc/Muttrc.d/smime.rc"
+FilePath "test/etc/apache2/apache2.conf"
+FilePath "test/etc/apache2/sites-available/default"
+FilePath "test/etc/apache2/sites-enabled/default"
+FilePath "test/etc/apache2/sites-enabled/default-ssl"
+FilePath "test/etc/bash_completion.d/bash_completion"
+FilePath "test/etc/bash_completion.d/gsettings"
+FilePath "test/etc/bash_completion.d/gsettings.orig"
+FilePath "test/etc/default/exim4"
+FilePath "test/etc/dkms/framework.conf"
+FilePath "test/etc/dkms/template-dkms-mkdeb/Makefile"
+FilePath "test/etc/dkms/template-dkms-mkdeb/debian/README.Debian"
+FilePath "test/etc/dkms/template-dkms-mkdeb/debian/changelog"
+FilePath "test/etc/dkms/template-dkms-mkdeb/debian/compat"
+FilePath "test/etc/dkms/template-dkms-mkdeb/debian/control"
+FilePath "test/etc/dkms/template-dkms-mkdeb/debian/copyright"
+FilePath "test/etc/dkms/template-dkms-mkdeb/debian/dirs"
+FilePath "test/etc/dkms/template-dkms-mkdeb/debian/postinst"
+FilePath "test/etc/dkms/template-dkms-mkdeb/debian/prerm"
+FilePath "test/etc/dkms/template-dkms-mkdeb/debian/rules"
+FilePath "test/etc/network/if-post-down.d/wpasupplicant"
+FilePath "test/etc/network/if-pre-up.d/wpasupplicant"
+FilePath "test/etc/network/if-up.d/wpasupplicant"
+FilePath "test/etc/vim/gvimrc"
+FilePath "test/etc/vim/gvimrc.orig"
+FilePath "test/etc/vim/vimrc.tiny"
+FilePath "test/etc/wpa_supplicant/ifupdown.sh"
+FilePath "test/etc/zsh/newuser.zshrc.recommended"
+FilePath "test/etc/zsh/zlogout"
+FilePath "test/etc/zsh/zlogout.orig"
+FilePath "test/etc/zsh/zprofile"
+FilePath "test/etc/zsh/zshenv.orig"
+FilePath "test/etc/zsh/zshrc"
+>>>2
+>>>= 0
+
+# 19. Untracked files and symlinks, which are the same in source and target.
 cmd --db test.db --source test/etc/ --other --target test/etc-dst/ --target-equal
 <<<
 >>>
@@ -262,7 +312,7 @@ FilePath "test/etc/zsh/zshenv.orig"
 >>>2
 >>>= 0
 
-# 19. Unchanged files and symlinks, which are different in source and target.
+# 20. Unchanged files and symlinks, which are different in source and target.
 cmd --db test.db --source test/etc/ --stored --obsolete --target test/etc-dst/ --target-differ
 <<<
 >>>
@@ -272,7 +322,7 @@ FilePath "test/etc/vim/vimrc"
 >>>2
 >>>= 0
 
-# 20. Untracked files and symlinks, which are different in source and target.
+# 21. Untracked files and symlinks, which are different in source and target.
 cmd --db test.db --source test/etc/ --other --target test/etc-dst/ --target-differ
 <<<
 >>>
@@ -281,7 +331,7 @@ FilePath "test/etc/apt/05aptitude"
 >>>2
 >>>= 0
 
-# 21. Unchanged files and symlinks, which are missed in the target.
+# 22. Unchanged files and symlinks, which are missed in the target.
 cmd --db test.db --source test/etc/ --stored --obsolete --target test/etc-dst/ --target-missed
 <<<
 >>>
@@ -292,7 +342,7 @@ FilePath "test/etc/zsh/zlogin"
 >>>2
 >>>= 0
 
-# 22. Untracked files and symlinks, which are missed in the target.
+# 23. Untracked files and symlinks, which are missed in the target.
 cmd --db test.db --source test/etc/ --other --target test/etc-dst/ --target-missed
 <<<
 >>>
@@ -303,11 +353,31 @@ FilePath "test/etc/network/if-down.d/wpasupplicant"
 >>>2
 >>>= 0
 
-# 23. Untracked files and symlinks, which are missed in the target.
+# 24. Untracked files and symlinks, which are missed in the target.
 cmd --db test.db --changed --source test/etc/ --target test/etc-dst/ --target-missed
 <<<
 >>>
 FilePath "test/etc/pam.d/su"
+FilePath "test/etc/zsh/zshenv"
+>>>2
+>>>= 0
+
+# 25. All files and symlinks, which are different or missed in source and target.
+cmd --db test.db --source test/etc/ --all --target test/etc-dst/
+<<<
+>>>
+FilePath "test/etc/bash_completion"
+FilePath "test/etc/modules"
+FilePath "test/etc/nsswitch.conf"
+FilePath "test/etc/Muttrc.d/gpg.rc"
+FilePath "test/etc/apache2/sites-available/default-ssl"
+FilePath "test/etc/apt/05aptitude"
+FilePath "test/etc/apt/apt.conf.d/05aptitude"
+FilePath "test/etc/bash_completion.d/apache2.2-common"
+FilePath "test/etc/network/if-down.d/wpasupplicant"
+FilePath "test/etc/pam.d/su"
+FilePath "test/etc/vim/vimrc"
+FilePath "test/etc/zsh/zlogin"
 FilePath "test/etc/zsh/zshenv"
 >>>2
 >>>= 0
