@@ -605,7 +605,7 @@ opts                = Config
                 (  Opt.long "source"
                 <> Opt.value Nothing
                 <> Opt.metavar "DIR"
-                <> Opt.help "Store db to file.")
+                <> Opt.help "Path to directory, where `/etc` is.")
         )
     <*> (Opt.option (Opt.eitherReader readFilePath)
             (  Opt.long "target"
