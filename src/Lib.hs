@@ -638,12 +638,12 @@ work Config { dpkgOutput        = dpkg
     xm0 <- loadDb etc db
     xm1 <- loadDpkg "/etc/" dpkg xm0 >>=
            compute ((etc </>) . viewA filePath) fileHash md5sum
+    saveDb db xm1
     ym0 <- maybe (return xm1)
                  (\trg -> compute ((trg </>) . viewA filePath)
                             targetFileHash
                             md5sum xm1)
                  mtrg
-    saveDb db ym0
     let ym = M.filter (trf <&&> eq hs <&&> ft <&&> pf) ym0
     liftIO $ mapM_ print (M.elems . M.map ((etc </>) . viewA filePath) $ ym)
     -- !!!
