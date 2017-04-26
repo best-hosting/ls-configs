@@ -1,6 +1,6 @@
 
-import Lib
+import Sgf.System.Configs
 
 main :: IO ()
-main                = main_3
+main                = main_
 

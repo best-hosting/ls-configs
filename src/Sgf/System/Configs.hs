@@ -1,6 +1,9 @@
 {-# LANGUAGE OverloadedStrings      #-}
 
-module Lib where
+module Sgf.System.Configs
+    ( main_
+    )
+  where
 
 import           Prelude                hiding (FilePath)
 import           Data.Monoid
@@ -65,8 +68,8 @@ work Config { dpkgOutput        = dpkg
     pf :: CInfo -> Bool
     pf          = getAny .  getConst . modifyAA package (Const . Any . pkf)
 
-main_3 :: IO ()
-main_3              = runP . join . liftIO
+main_ :: IO ()
+main_               = runP . join . liftIO
     . execParser
         $ info (work <$> (helper <*> opts))
         (  fullDesc
