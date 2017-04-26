@@ -1,12 +1,12 @@
 # 1. Prepare.
- rm -f test.db; chmod 000 "test/etc/at.deny"; chmod 000 "test/etc/default/cacerts"
+ rm -f test/test.db; chmod 000 "test/etc/at.deny"; chmod 000 "test/etc/default/cacerts"
 <<<
 >>>
 >>>2
 >>>=0
 
 # 2. Files, which were changed.
-cmd --db test.db --source test/etc/ --changed --files
+cmd --file test/dpkg-query.txt --db test/test.db --source test/etc/ --changed --files
 <<<
 >>>
 FilePath "test/etc/unburden-home-dir.list"
@@ -15,7 +15,7 @@ FilePath "test/etc/pam.d/su"
 >>>= 0
 
 # 3. Symlinks pointing to files, which were changed.
-cmd --db test.db --source test/etc/ --changed --symlinks
+cmd --file test/dpkg-query.txt --db test/test.db --source test/etc/ --changed --symlinks
 <<<
 >>>
 FilePath "test/etc/vim/gvimrc"
@@ -24,7 +24,7 @@ FilePath "test/etc/zsh/zshenv"
 >>>= 0
 
 # 4. Files, which hash can't be computed.
-cmd --db test.db --source test/etc/ --errors-read --files
+cmd --file test/dpkg-query.txt --db test/test.db --source test/etc/ --errors-read --files
 <<<
 >>>
 FilePath "test/etc/at.deny"
@@ -33,7 +33,7 @@ FilePath "test/etc/default/cacerts"
 >>>= 0
 
 # 5. Symlinks pointing to files, which hash can't be computed.
-cmd --db test.db --source test/etc/ --errors-read --symlinks
+cmd --file test/dpkg-query.txt --db test/test.db --source test/etc/ --errors-read --symlinks
 <<<
 >>>
 FilePath "test/etc/resolv.conf"
@@ -42,7 +42,7 @@ FilePath "test/etc/dkms/template-dkms-mkdsc"
 >>>= 0
 
 # 6. Files, which are not stored in `dpkg` db.
-cmd --db test.db --source test/etc/ --other --files
+cmd --file test/dpkg-query.txt --db test/test.db --source test/etc/ --other --files
 <<<
 >>>
 FilePath "test/etc/bash.bashrc.orig"
@@ -62,7 +62,7 @@ FilePath "test/etc/zsh/zshenv.orig"
 >>>= 0
 
 # 7. Symlinks pointing to files, which are not stored in `dpkg` db.
-cmd --db test.db --source test/etc/ --other --symlinks
+cmd --file test/dpkg-query.txt --db test/test.db --source test/etc/ --other --symlinks
 <<<
 >>>
 FilePath "test/etc/resolv.conf"
@@ -75,7 +75,7 @@ FilePath "test/etc/network/if-up.d/wpasupplicant"
 >>>= 0
 
 # 8. Files matching obsolete hash.
-cmd --db test.db --source test/etc/ --obsolete --files
+cmd --file test/dpkg-query.txt --db test/test.db --source test/etc/ --obsolete --files
 <<<
 >>>
 FilePath "test/etc/etter.conf"
@@ -86,7 +86,7 @@ FilePath "test/etc/zsh/zprofile"
 >>>= 0
 
 # 9. Symlinks pointing to files matching obsolete hash.
-cmd --db test.db --source test/etc/ --obsolete --symlinks
+cmd --file test/dpkg-query.txt --db test/test.db --source test/etc/ --obsolete --symlinks
 <<<
 >>>
 FilePath "test/etc/apt/apt.conf.d/05aptitude"
@@ -96,7 +96,7 @@ FilePath "test/etc/zsh/zlogout"
 >>>= 0
 
 # 10. Unchanged files (hash matches to what is stored in `dpkg` db).
-cmd --db test.db --source test/etc/ --stored --files
+cmd --file test/dpkg-query.txt --db test/test.db --source test/etc/ --stored --files
 <<<
 >>>
 FilePath "test/etc/debian_version"
@@ -130,7 +130,7 @@ FilePath "test/etc/zsh/zshrc"
 >>>= 0
 
 # 11. Symlinks pointing unchanged files.
-cmd --db test.db --source test/etc/ --stored --symlinks
+cmd --file test/dpkg-query.txt --db test/test.db --source test/etc/ --stored --symlinks
 <<<
 >>>
 FilePath "test/etc/bash.bashrc"
@@ -142,7 +142,7 @@ FilePath "test/etc/zsh/zlogout"
 >>>= 0
 
 # 12. Unchanged files of installed packages.
-cmd --db test.db --source test/etc/ --stored --package vim-common --package mutt --status 'install ok installed'
+cmd --file test/dpkg-query.txt --db test/test.db --source test/etc/ --stored --package vim-common --package mutt --status 'install ok installed'
 <<<
 >>>
 FilePath "test/etc/Muttrc.d/charset.rc"
@@ -155,7 +155,7 @@ FilePath "test/etc/vim/vimrc"
 >>>= 0
 
 # 13. Symlinks pointing to unchanged files of deinstalled package.
-cmd --db test.db --source test/etc/ --status 'deinstall ok config-files' --symlinks
+cmd --file test/dpkg-query.txt --db test/test.db --source test/etc/ --status 'deinstall ok config-files' --symlinks
 <<<
 >>>
 FilePath "test/etc/apache2/sites-available/default"
@@ -164,7 +164,7 @@ FilePath "test/etc/apache2/sites-available/default-ssl"
 >>>= 0
 
 # 14. Unchanged files of deinstalled package.
-cmd --db test.db --source test/etc/ --status 'deinstall ok config-files' --files
+cmd --file test/dpkg-query.txt --db test/test.db --source test/etc/ --status 'deinstall ok config-files' --files
 <<<
 >>>
 FilePath "test/etc/apache2/apache2.conf"
@@ -173,7 +173,7 @@ FilePath "test/etc/bash_completion.d/apache2.2-common"
 >>>= 0
 
 # 15. Files with empty package (should match to `--other`).
-cmd --db test.db --source test/etc/ --package "" --other --files
+cmd --file test/dpkg-query.txt --db test/test.db --source test/etc/ --package "" --other --files
 <<<
 >>>
 FilePath "test/etc/bash.bashrc.orig"
@@ -193,7 +193,7 @@ FilePath "test/etc/zsh/zshenv.orig"
 >>>= 0
 
 # 16. Symlinks pointing to files with empty package (should match to `--other`).
-cmd --db test.db --source test/etc/ --package "" --other --symlinks
+cmd --file test/dpkg-query.txt --db test/test.db --source test/etc/ --package "" --other --symlinks
 <<<
 >>>
 FilePath "test/etc/resolv.conf"
@@ -206,7 +206,7 @@ FilePath "test/etc/network/if-up.d/wpasupplicant"
 >>>= 0
 
 # 17. Tracked files and symlinks, which are the same in source and target.
-cmd --db test.db --source test/etc/ --stored --obsolete --target test/etc-dst/ --target-equal
+cmd --file test/dpkg-query.txt --db test/test.db --source test/etc/ --stored --obsolete --target test/etc-dst/ --target-equal
 <<<
 >>>
 FilePath "test/etc/bash.bashrc"
@@ -241,7 +241,7 @@ FilePath "test/etc/zsh/zshrc"
 >>>= 0
 
 # 18. All files and symlinks, which are the same in source and target.
-cmd --db test.db --source test/etc/ --all --target test/etc-dst/ --target-equal
+cmd --file test/dpkg-query.txt --db test/test.db --source test/etc/ --all --target test/etc-dst/ --target-equal
 <<<
 >>>
 FilePath "test/etc/bash.bashrc"
@@ -291,7 +291,7 @@ FilePath "test/etc/zsh/zshrc"
 >>>= 0
 
 # 19. Untracked files and symlinks, which are the same in source and target.
-cmd --db test.db --source test/etc/ --other --target test/etc-dst/ --target-equal
+cmd --file test/dpkg-query.txt --db test/test.db --source test/etc/ --other --target test/etc-dst/ --target-equal
 <<<
 >>>
 FilePath "test/etc/bash.bashrc.orig"
@@ -313,7 +313,7 @@ FilePath "test/etc/zsh/zshenv.orig"
 >>>= 0
 
 # 20. Unchanged files and symlinks, which are different in source and target.
-cmd --db test.db --source test/etc/ --stored --obsolete --target test/etc-dst/ --target-differ
+cmd --file test/dpkg-query.txt --db test/test.db --source test/etc/ --stored --obsolete --target test/etc-dst/ --target-differ
 <<<
 >>>
 FilePath "test/etc/apache2/sites-available/default-ssl"
@@ -323,7 +323,7 @@ FilePath "test/etc/vim/vimrc"
 >>>= 0
 
 # 21. Untracked files and symlinks, which are different in source and target.
-cmd --db test.db --source test/etc/ --other --target test/etc-dst/ --target-differ
+cmd --file test/dpkg-query.txt --db test/test.db --source test/etc/ --other --target test/etc-dst/ --target-differ
 <<<
 >>>
 FilePath "test/etc/modules"
@@ -332,7 +332,7 @@ FilePath "test/etc/apt/05aptitude"
 >>>= 0
 
 # 22. Unchanged files and symlinks, which are missed in the target.
-cmd --db test.db --source test/etc/ --stored --obsolete --target test/etc-dst/ --target-missed
+cmd --file test/dpkg-query.txt --db test/test.db --source test/etc/ --stored --obsolete --target test/etc-dst/ --target-missed
 <<<
 >>>
 FilePath "test/etc/bash_completion"
@@ -343,7 +343,7 @@ FilePath "test/etc/zsh/zlogin"
 >>>= 0
 
 # 23. Untracked files and symlinks, which are missed in the target.
-cmd --db test.db --source test/etc/ --other --target test/etc-dst/ --target-missed
+cmd --file test/dpkg-query.txt --db test/test.db --source test/etc/ --other --target test/etc-dst/ --target-missed
 <<<
 >>>
 FilePath "test/etc/nsswitch.conf"
@@ -354,7 +354,7 @@ FilePath "test/etc/network/if-down.d/wpasupplicant"
 >>>= 0
 
 # 24. Untracked files and symlinks, which are missed in the target.
-cmd --db test.db --changed --source test/etc/ --target test/etc-dst/ --target-missed
+cmd --file test/dpkg-query.txt --db test/test.db --changed --source test/etc/ --target test/etc-dst/ --target-missed
 <<<
 >>>
 FilePath "test/etc/pam.d/su"
@@ -363,7 +363,7 @@ FilePath "test/etc/zsh/zshenv"
 >>>= 0
 
 # 25. All files and symlinks, which are different or missed in source and target.
-cmd --db test.db --source test/etc/ --all --target test/etc-dst/
+cmd --file test/dpkg-query.txt --db test/test.db --source test/etc/ --all --target test/etc-dst/
 <<<
 >>>
 FilePath "test/etc/bash_completion"
@@ -383,7 +383,7 @@ FilePath "test/etc/zsh/zshenv"
 >>>= 0
 
 # 26. All files and symlinks, which are different or missed in source and target with filter.
-cmd --db test.db --source test/etc/ --all --target test/etc-dst/ --filter test/filter.txt
+cmd --file test/dpkg-query.txt --db test/test.db --source test/etc/ --all --target test/etc-dst/ --filter test/filter.txt
 <<<
 >>>
 FilePath "test/etc/bash_completion"
@@ -399,7 +399,7 @@ FilePath "test/etc/zsh/zshenv"
 >>>= 0
 
 # 27. Unchanged files of installed packages with filter.
-cmd --db test.db --source test/etc/ --stored --package vim-common --package mutt --status 'install ok installed' --filter test/filter.txt
+cmd --file test/dpkg-query.txt --db test/test.db --source test/etc/ --stored --package vim-common --package mutt --status 'install ok installed' --filter test/filter.txt
 <<<
 >>>
 FilePath "test/etc/Muttrc.d/charset.rc"

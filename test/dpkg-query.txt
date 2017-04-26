@@ -1,0 +1,393 @@
+abrowser install ok installed
+
+anthy install ok installed
+
+anthy-common install ok installed
+ /etc/anthy/anthy-conf 25bb2d544f41b325f0a1fb1243f2a257
+apache2-bin install ok installed
+
+apache2-utils install ok installed
+
+apache2.2-bin install ok installed
+
+apache2.2-common deinstall ok config-files
+ /etc/bash_completion.d/apache2.2-common 6a5f85e62655f6b5c8fa0f95c7c35c9c
+ /etc/apache2/sites-available/default-ssl bf4746bf3b38bdbbd82ba21b3933ba10
+ /etc/apache2/sites-available/default b38ca5a963f52930ede3f4e1958f3275
+ /etc/apache2/conf.d/localized-error-pages 844ba27ddb794fc6967bfb56b950e6a8
+ /etc/apache2/conf.d/security 568b2ad19312dd70f67184febc9042c7
+ /etc/apache2/conf.d/other-vhosts-access-log 2cad303fc4221d6b0068a8b37597b9fb
+ /etc/apache2/conf.d/charset e6fbb8adf631932851d6cc522c1e48d7
+ /etc/apache2/magic a6d370833a02f53db6a0a30800704994
+ /etc/apache2/mods-available/imagemap.load 51d5109d8bc2bafc17af03beace4d8a4
+ /etc/apache2/mods-available/rewrite.load 55e18fb7df64c8f390904b972637c17d
+ /etc/apache2/mods-available/ldap.load 735ac5f246738e11a53f6c515b8dfc48
+ /etc/apache2/mods-available/info.conf 8bad978c39acdb44fff33d144384cd2d
+ /etc/apache2/mods-available/authz_default.load 26209bfbb5e230e3b33bbe10febae72d
+ /etc/apache2/mods-available/proxy_ftp.load c05db1b229a7957f0032c0d79ed7e3c9
+ /etc/apache2/mods-available/log_forensic.load 7177e2427eb7c78f1ab10c034a809793
+ /etc/apache2/mods-available/mem_cache.load 282139ee986076295f97a67987e2554b
+ /etc/apache2/mods-available/alias.conf 926033d21c2819e794c94a251355acc9
+ /etc/apache2/mods-available/authz_groupfile.load bf972e82336c72b20d67d871ef77d4ce
+ /etc/apache2/mods-available/dump_io.load 8231c51ef692e0766625ece087484fe4
+ /etc/apache2/mods-available/version.load 3d76c5c51100f9c28ae1a66b56e01764
+ /etc/apache2/mods-available/authz_owner.load 9ed1ea15654bb594453438154b642539
+ /etc/apache2/mods-available/authn_file.load ecdeeab8cfec4a9dd0c065a4d6948c31
+ /etc/apache2/mods-available/cgid.conf 1b649ba4fca05e7d22b2080b4a90184a
+ /etc/apache2/mods-available/filter.load 8df0170e37a8925238860657d6c60fe5
+ /etc/apache2/mods-available/cgid.load c3ee2eac02c248b5a39fb1a7afee4cb9
+ /etc/apache2/mods-available/deflate.load ac4540dd672556b07f900425751f745c
+ /etc/apache2/mods-available/include.load 427760ab8396c2a3af8dfa25ed62c92c
+ /etc/apache2/mods-available/headers.load ba7d09162b65d09397bd58be33138e4d
+ /etc/apache2/mods-available/proxy.load 3d3719c88d01152e817f74fc2fd6ce9e
+ /etc/apache2/mods-available/proxy_balancer.conf b53708e8eaf6c32354b0498bd02da5d4
+ /etc/apache2/mods-available/proxy_connect.load 6bc4b5de977f70a0b6ae98ab04383c0c
+ /etc/apache2/mods-available/proxy_ftp.conf b6d44b2da1c5246a290738729b3b6980
+ /etc/apache2/mods-available/auth_basic.load 5eec35bb52e1ae9ff5eec602ed1d2374
+ /etc/apache2/mods-available/mem_cache.conf 9f18d50ca7613b9c694de9ef4545d6c5
+ /etc/apache2/mods-available/reqtimeout.conf f5104bdb13db79bd548728d5146931a7
+ /etc/apache2/mods-available/disk_cache.conf fe06d97d8cb000ef4b60ba2a7cff92e9
+ /etc/apache2/mods-available/proxy_ajp.load e058e03c1d4f9e4d8e2c439ed75cc501
+ /etc/apache2/mods-available/vhost_alias.load fdd42d34966c329cdee2435dfe72ee24
+ /etc/apache2/mods-available/file_cache.load f097659127628ec6f9c6a558d0baf566
+ /etc/apache2/mods-available/charset_lite.load 1585fcd1b631c2e9b166e170cb162c54
+ /etc/apache2/mods-available/actions.conf e496c26d829f0186e46a87eace8a42f6
+ /etc/apache2/mods-available/authn_dbm.load 4e37546871dbcba8550a0d781f6fbfa8
+ /etc/apache2/mods-available/mime_magic.load ab5c69aa0c91f11157e9bfc4972f8cce
+ /etc/apache2/mods-available/deflate.conf 8c13524d3a4955810e6434ff388c3168
+ /etc/apache2/mods-available/dav_fs.load 17f662fd023dbaaab9d89f9a11ae58c1
+ /etc/apache2/mods-available/cache.load ea99aba14e9aa25c27653b9958239a6e
+ /etc/apache2/mods-available/setenvif.conf 99d607cc2acf4e13b700b1e67a8f8503
+ /etc/apache2/mods-available/authz_dbm.load 51f3d40cb47a4bd739dedf1e6d69e646
+ /etc/apache2/mods-available/proxy.conf 5b40618d1d3ec04e618b05581effd68a
+ /etc/apache2/mods-available/mime.conf 00a92470c78b1573e94bf421d72a3806
+ /etc/apache2/mods-available/authnz_ldap.load d65845f053d08b82da239c73c9094c35
+ /etc/apache2/mods-available/dbd.load f03fe275174a5ed97b0f5f5726ccea60
+ /etc/apache2/mods-available/authz_user.load 69150f8246499e0135580d8cc16eaeab
+ /etc/apache2/mods-available/negotiation.conf 25480201827ba22eef212617006c1491
+ /etc/apache2/mods-available/dav.load ed469867552a1145b8c3ffa5780ff83e
+ /etc/apache2/mods-available/userdir.load c034025405561ea48fbcb67fd1998f4d
+ /etc/apache2/mods-available/authn_default.load a54d861749157cc576744d50d8d2d773
+ /etc/apache2/mods-available/expires.load dac64edc06fe538c2edd7b3f1f3b03f1
+ /etc/apache2/mods-available/asis.load f9b9a0503caeb92985bd840a28f5e5b9
+ /etc/apache2/mods-available/cern_meta.load 2c2d9adcb273f934304e7dfb5775f7b9
+ /etc/apache2/mods-available/cgi.load 32a1c48f0e29feb415c9460378728d82
+ /etc/apache2/mods-available/mime.load 9c858dc2ad2825dc3f862ecba90cf6ec
+ /etc/apache2/mods-available/actions.load 95dcfd2efdd41666de5f31dd72e01e41
+ /etc/apache2/mods-available/dir.load 397aadae1b8b18e3a7a233cf7c297f99
+ /etc/apache2/mods-available/suexec.load 335169c85f4afc14524846789d46af06
+ /etc/apache2/mods-available/auth_digest.load 9cffb7b8299cfb160350514f84cd738c
+ /etc/apache2/mods-available/dav_fs.conf 9d5c750538bf58538c558b907ca924f1
+ /etc/apache2/mods-available/speling.load 095570b0cb18ebdfc357a2241c6932ea
+ /etc/apache2/mods-available/authz_host.load 4b8162e3e3a58d1dc2222e2ad352bd93
+ /etc/apache2/mods-available/ldap.conf cea4d74e8481cad64ecbdf3d634faa41
+ /etc/apache2/mods-available/ssl.load 75536619bec23ffc5c907734cce151a0
+ /etc/apache2/mods-available/proxy_scgi.load cb11d685e60db26bbdad456263bf63b7
+ /etc/apache2/mods-available/status.load 00976ea5115f286bbc21357581d0b65e
+ /etc/apache2/mods-available/authn_dbd.load 86e21a672a4f245715a788f9873174ed
+ /etc/apache2/mods-available/proxy_balancer.load ad029e43cbc26f4657cd88774807982a
+ /etc/apache2/mods-available/reqtimeout.load 7fd814775dc3f3c9e6753ef874978f96
+ /etc/apache2/mods-available/authn_anon.load 03cbe85c698911a3d3235b4855726481
+ /etc/apache2/mods-available/ext_filter.load d3c4acfca1322274a9a8504e8cef27e9
+ /etc/apache2/mods-available/userdir.conf 244c49845e4986820171b98bf20d9894
+ /etc/apache2/mods-available/negotiation.load fd7bf44d833446a35f0199d7cbcc9793
+ /etc/apache2/mods-available/usertrack.load 8400042dd4374fad5eedf33ffb3c68f0
+ /etc/apache2/mods-available/unique_id.load 6c13959015fb35276572070b44e63380
+ /etc/apache2/mods-available/disk_cache.load 4a523a67fa6f1b4f5966a4d583f8f433
+ /etc/apache2/mods-available/proxy_http.load 161b514c355c6daa95f11371fb9c184c
+ /etc/apache2/mods-available/env.load 3e8963a7df7c047be50a552d80a4f853
+ /etc/apache2/mods-available/dir.conf b6882491a6d2b823da960f19a50b132f
+ /etc/apache2/mods-available/dav_lock.load faad09687e64ebb9670aa0b8095d6642
+ /etc/apache2/mods-available/substitute.load 50e63dc17612e22484a88f537e8aec8e
+ /etc/apache2/mods-available/status.conf 09693ffd352436e900afd719c5a5a8b3
+ /etc/apache2/mods-available/autoindex.load b9f9d364f1b4c96c45b6db353180aa15
+ /etc/apache2/mods-available/alias.load 7742296502ce1d2f970cc87322d8ffba
+ /etc/apache2/mods-available/authn_alias.load d81c1513a20845e92307cb59d806c589
+ /etc/apache2/mods-available/ident.load 51ba623a8a2bd71c512f847d02e0934f
+ /etc/apache2/mods-available/info.load c1faffe40b8bed9f2b817b9dc0503bb6
+ /etc/apache2/mods-available/setenvif.load 6f670fad5b6f6b14fa72c9cd3058469b
+ /etc/apache2/mods-available/ssl.conf 31f28d4e82635d2393210b424369674b
+ /etc/apache2/mods-available/mime_magic.conf 0174ea31061cbf1d73e48c89f30b802e
+ /etc/apache2/mods-available/autoindex.conf 77ea294b47d8d2e4dc68107907da8311
+ /etc/apache2/envvars 0fbcabe747a6f6c596797b843bc05395
+ /etc/apache2/ports.conf 38b31d20326f3640a8dfbe1ff5d1c4ad
+ /etc/apache2/apache2.conf 8f5c4e0629a7c10aead1bf839cc57c72
+ /etc/ufw/applications.d/apache2.2-common f8d4fd920e598ceb4379613c6261f6af
+ /etc/logrotate.d/apache2 c628f4befcafbd72c75667605a93cdbe
+ /etc/init.d/apache2 8df359e725b70b9cd4c70c0f020b7439
+ /etc/cron.daily/apache2 c3367e905394bfbd009fd44b223b3735
+ /etc/default/apache2 f9cde5d72a68a85432a508cd2c960e63
+apcalc install ok installed
+
+apcalc-common install ok installed
+
+apt install ok installed
+ /etc/kernel/postinst.d/apt-auto-removal e076044579e46f022b217cf3cd98998f
+ /etc/logrotate.d/apt 179f2ed4f85cbaca12fa3d69c2a4a1c3
+ /etc/apt/apt.conf.d/20changelog 8baafd95750e9c31c45512ff7bde7043
+ /etc/apt/apt.conf.d/01autoremove 5bf3e7bfa3bec23d634c9f3652da1787
+ /etc/cron.daily/apt 38f629d906ca7e292db6e426cc403f98
+apt-file install ok installed
+ /etc/bash_completion.d/apt-file ddcb02aa2ac1ccd3f1b2f274b868e450
+ /etc/apt/apt-file.conf cba24080787e02ed8cafab04863f4070
+apt-transport-https install ok installed
+
+apt-utils install ok installed
+
+aptitude install ok installed
+ /etc/logrotate.d/aptitude fb66bc5dc8c13edbcb83cea15ff86959
+ /etc/cron.daily/aptitude f934222d5eb13cb132e2751bdb023318
+ /etc/apt/apt.conf.d/05aptitude 85b39c8f9413a8f29ddcce844d026929 obsolete
+aptitude-common install ok installed
+
+apturl install ok installed
+
+at install ok installed
+ /etc/at.deny 8cb7e7632119dc26115436938efd2522
+ /etc/pam.d/atd 9c697681ca1c14072100b0accb49ee49
+ /etc/init/atd.conf 67b61cd5b9745d2c3837b776c2367472
+ /etc/init.d/atd ce2de503acc3de02f544571e89d4d717
+at-spi deinstall ok config-files
+ /etc/xdg/autostart/at-spi-registryd.desktop 25596c67a4c661418e5ffba3ac8e70c6 obsolete
+at-spi2-core install ok installed
+ /etc/at-spi2/accessibility.conf 3d889b26c1d8da538e386cd6b67caba8
+ /etc/X11/Xsession.d/90qt-a11y 80c75ef3ac67b24878ea6c74c47b6020
+ /etc/xdg/autostart/at-spi-dbus-bus.desktop 4d1c8bc3a6a59c59c1b76754c1e20318
+audiocd-kio install ok installed
+
+
+base-files install ok installed
+ /etc/debian_version 142012ca081ab0981cdcc1ac6db77c34
+ /etc/dpkg/origins/debian 731423fa8ba067262f8ef37882d1e742
+ /etc/dpkg/origins/ubuntu ea35901c45553c3451f60476be94d2d8
+ /etc/host.conf 89408008f2585c957c031716600d5a80
+ /etc/issue 09e3f22a626a501b6d61e54b8bb5ca6d
+ /etc/issue.net 3e2717e4916e3cb64ddadb63c4d01a7c
+ /etc/legal 0110925f6e068836ef2e09356e3651d9
+ /etc/lsb-release ca6b4478a6d8d3e5b3bbb4480b1bc190
+ /etc/os-release d46be31abb19754b55c1419850957f09
+ /etc/update-motd.d/00-header 4a1e6eed7a59f200b4267085721750a3
+ /etc/update-motd.d/10-help-text 5064fb57493325202dded183ab0c4ebd
+base-passwd install ok installed
+
+bash install ok installed
+ /etc/skel/.profile ecb6d3479ac3823f1da7f314d871989b
+ /etc/skel/.bashrc f110abe5b3cfd324c2e5128eb4733879
+ /etc/skel/.bash_logout 22bfb8c1dd94b5f3813a2b25da67463f
+ /etc/bash.bashrc a93b8650846fd2bb653d03bd706f1f47
+bash-completion install ok installed
+ /etc/bash_completion a81b3f1cb197219b815942f4fc7fa94e
+ /etc/profile.d/bash_completion.sh 749e4786543bc3d19e20b0e214806c35
+bc install ok installed
+
+bcmwl-modaliases install ok installed
+
+beep install ok installed
+
+bind9-host install ok installed
+
+bind9utils install ok installed
+
+binfmt-support install ok installed
+ /etc/init/binfmt-support.conf def05a098b484181d30085a524bc0cfa
+ /etc/init.d/binfmt-support newconffile
+binutils install ok installed
+
+binutils-avr install ok installed
+
+blinken install ok installed
+
+blobwars install ok installed
+
+blobwars-data install ok installed
+
+blogilo install ok installed
+
+blt deinstall ok config-files
+
+bluefish install ok installed
+
+bluefish-data install ok installed
+
+bluefish-plugins install ok installed
+bovo install ok installed
+
+branding-ubuntu install ok installed
+
+brasero install ok installed
+
+brasero-cdrkit install ok installed
+
+ca-certificates install ok installed
+
+ca-certificates-java install ok installed
+ /etc/default/cacerts 0ded97abeff69c2362939e2e881e214a
+ /etc/ca-certificates/update.d/jks-keystore b3bbe485f358ff3e9495b039cf25aa71
+cabal-install install ok installed
+ /etc/bash_completion.d/cabal ae5d75885ddad2fc75c6397a7ce36e81
+cabextract install ok installed
+
+dkms install ok installed
+ /etc/bash_completion.d/dkms fbb05514b62b89752809c57964679b3b
+ /etc/kernel/prerm.d/dkms 97139ec74350d65636320b76a11b1f47
+ /etc/kernel/postinst.d/dkms fa05cd89316f042b4ed12090e5aad896
+ /etc/kernel/header_postinst.d/dkms fa05cd89316f042b4ed12090e5aad896
+ /etc/modprobe.d/dkms.conf 74452a1f23577a0bb30d764a895429d0
+ /etc/dkms/template-dkms-mkdeb/Makefile d97acaeba72f667d3eb69695e9018243
+ /etc/dkms/template-dkms-mkdeb/debian/control 932cd11859c7c153a8c458325e74497f
+ /etc/dkms/template-dkms-mkdeb/debian/prerm e7c0c39003edb2255d22a775efa907e5
+ /etc/dkms/template-dkms-mkdeb/debian/compat 84bc3da1b3e33a18e8d5e1bdd7a18d7a
+ /etc/dkms/template-dkms-mkdeb/debian/changelog f14e36c92f14270163eb20fa883d463e
+ /etc/dkms/template-dkms-mkdeb/debian/copyright de471e376ba2c3886424b5c4649c42d6
+ /etc/dkms/template-dkms-mkdeb/debian/dirs ea7a90f4a1be2e0054c3d4920c29e33f
+ /etc/dkms/template-dkms-mkdeb/debian/README.Debian 6707f5716bc3a2d65fa1b05d81ba8add
+ /etc/dkms/template-dkms-mkdeb/debian/postinst 205c51f28c7327c0d13f5891fac55d04
+ /etc/dkms/template-dkms-mkdeb/debian/rules c385ec9e8f6c6745ad9b9665c38cbd84
+ /etc/dkms/framework.conf 4e72dd99504978161b561f69256c1696
+dmidecode install ok installed
+
+dmsetup install ok installed
+
+easytag install ok installed
+
+epiphany-browser-data install ok installed
+ /etc/gnome/epiphany/mime-types-permissions.xml c20fa82c1955fe92ff10333a56416d82
+erlang-asn1 install ok installed
+
+erlang-base install ok installed
+
+erlang-crypto install ok installed
+espeak-data install ok installed
+
+ettercap-common install ok installed
+ /etc/ettercap/etter.mdns 9859104c72bcde8a74b5e4f15b3edc22
+ /etc/ettercap/etter.conf ea5e935deed1427ed21db6188b71880b
+ /etc/ettercap/etter.dns 76cf9c757e20d5534bc2381a09c85566
+ /etc/ettercap/etter.nbns b201383fb195c2a3756858f0b2b98edf
+ /etc/etter.conf b12e477f419c7bbeb4095306899c760f obsolete
+file-roller install ok installed
+
+filelight install ok installed
+
+filezilla install ok installed
+
+filezilla-common install ok installed
+
+finch install ok installed
+
+happy install ok installed
+insserv install ok installed
+ /etc/insserv.conf 3e9467113029a6356f57842085f3c849
+ /etc/bash_completion.d/insserv 32975fe14795d6fce1408d5fd22747fd
+install-info install ok installed
+
+intel-gpu-tools install ok installed
+
+intltool install ok installed
+
+intltool-debian install ok installed
+
+libglib2.0-bin install ok installed
+ /etc/bash_completion.d/gsettings ed6dbd29972bb65275e46f1cb1ac5062 obsolete
+ /etc/bash_completion.d/gresource 305f04df5006e28bbee350d1f9f7f973 obsolete
+ /etc/bash_completion.d/gdbus 3c6022ac0bf85f2f374358a52456e803 obsolete
+libglib2.0-cil install ok installed
+libmono-system-data-services2.0-cil install ok installed
+
+libmono-system-data-services4.0-cil install ok installed
+
+lockfile-progs install ok installed
+
+login install ok installed
+ /etc/login.defs be0977c1c1c84c62823c7d7d4e099067
+ /etc/securetty d9e5bf5e6bfa00ddd273a3bcf1a49bec
+ /etc/pam.d/login e7c11a24c72175f2451599d40e32f4ca
+ /etc/pam.d/su 7309fb874571fe5447321b43448a50b3
+logrotate install ok installed
+ /etc/logrotate.conf 4316e462f3c800bebcf43aa9d4fcf4b0
+ /etc/cron.daily/logrotate da9c29ed0b408ffd88d05c3d8e881e94
+logstalgia install ok installed
+
+
+mutt install ok installed
+ /etc/Muttrc ff12d2918cc644da9cd8a5fdcccb4d26
+ /etc/Muttrc.d/colors.rc dbfa7d642333968764f34e17bd00a266
+ /etc/Muttrc.d/smime.rc 99a4bd2832ab014e6e8ae67f48de048c
+ /etc/Muttrc.d/gpg.rc 60ecff6774ffca896894b72fb815b013
+ /etc/Muttrc.d/compressed-folders.rc 6f6ba74d3f9c6e7d6a68ab0f9cdc34dc
+ /etc/Muttrc.d/charset.rc f6c7e96f5894cf98d21ec2a2d688eb45
+mutter install ok installed
+
+mutter-common install ok installed
+
+myspell-en-au install ok installed
+
+
+tali install ok installed
+
+
+unattended-upgrades install ok installed
+ /etc/logrotate.d/unattended-upgrades 07320e1f80567c19e78cf683d2fbf8b6
+ /etc/init.d/unattended-upgrades 4f525a4e44bc36d79931eb1794fd0518
+ /etc/pm/sleep.d/10_unattended-upgrades-hibernate d4ebdc2a2fdfeea33e6cd39812a85c3a
+ /etc/apt/apt.conf.d/50unattended-upgrades 4c4d0203d3db42331c1517ea26d064da
+unburden-home-dir install ok installed
+ /etc/unburden-home-dir.list 11e0b6027f07f25b8b4096a6dbb71bdc
+ /etc/X11/Xsession.d/95unburden-home-dir 6186430a72b27540a3f5f989bb776b4f
+ /etc/default/unburden-home-dir e0189fefb10a9811b87cb694e35cd085
+ /etc/unburden-home-dir cdf68b7cd9b0f934270225a3bc1072fb
+unison install ok installed
+ /etc/bash_completion.d/unison/unison.completion.bash e73880b4d5361e14d0a1bf35d11de6cf
+unity install ok installed
+ /etc/pam.d/unity 6db13401571f575bd03b96a501817be7
+unity-2d install ok installed
+
+unity-asset-pool install ok installed
+vim install ok installed
+
+vim-common install ok installed
+ /etc/vim/vimrc b458e7b28b9bc2d04bd5a3fd0f8d777e
+vim-gtk install ok installed
+
+vim-gui-common install ok installed
+ /etc/vim/gvimrc ba365c407b619ff849cd56b07757e666
+vim-runtime install ok installed
+
+vim-tiny install ok installed
+ /etc/vim/vimrc.tiny cda3c912e5fd54a07996ee29b14c58eb
+vinagre install ok installed
+
+vino install ok installed
+ /etc/xdg/autostart/vino-server.desktop 2118f88a29a43fbfe499d1cbe323d02c
+virtinst install ok installed
+
+wodim install ok installed
+ /etc/netscsid.conf 00118d4a9c94c41d3ae415638cc055dd
+ /etc/wodim.conf 9369bbf580daf4c52288f951dd547b37
+wpagui install ok installed
+
+wpasupplicant install ok installed
+ /etc/dbus-1/system.d/wpa_supplicant.conf b6e52e30f79834d19db8311417ee0a86
+ /etc/wpa_supplicant/action_wpa.sh 5269e292cd68ebf9698e26d3026e817e
+ /etc/wpa_supplicant/functions.sh 550c42ecf41ce2bf299383c50dacdf1c
+ /etc/wpa_supplicant/ifupdown.sh 4c82dbf7e1d8c5ddd70e40b9665cfeee
+wxmaxima install ok installed
+
+zlib1g-dev install ok installed
+
+zsh install ok installed
+ /etc/zsh/newuser.zshrc.recommended dac3563a2ddd13e8027b1861d415f3d4 obsolete
+ /etc/zsh/zshrc e069ba51ba293da1aeddd5779324df19 obsolete
+ /etc/zsh/zshenv 5a8a0ff4f6ff945a5aa6ba7f6f1e8c97 obsolete
+ /etc/zsh/zprofile 58c4f65d775c055b5d80b67c1bd12838 obsolete
+ /etc/zsh/zlogout b73789c3e790b855302ce10ca076037a obsolete
+ /etc/zsh/zlogin 48032df2ace0977f2491b016e3c421a3 obsolete
+zsh-common install ok installed
+ /etc/zsh/zshenv 5a8a0ff4f6ff945a5aa6ba7f6f1e8c97
+ /etc/zsh/zlogin 48032df2ace0977f2491b016e3c421a3
+ /etc/zsh/newuser.zshrc.recommended dac3563a2ddd13e8027b1861d415f3d4
+ /etc/zsh/zprofile 58c4f65d775c055b5d80b67c1bd12838
+ /etc/zsh/zshrc bc4eae904754991040e5cb7c5ab650ea
+ /etc/zsh/zlogout b73789c3e790b855302ce10ca076037a
+zsnes install ok installed
+

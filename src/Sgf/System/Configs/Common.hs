@@ -7,11 +7,12 @@ module Sgf.System.Configs.Common
     , (<&&>)
     , maybeList
     , maybeUpdate
+    , repr
     , liftEither
+    , liftMaybe
     , runIO
     , runP
     , whenDef
-    , liftMaybe
     )
   where
 
@@ -61,9 +62,14 @@ stderrUtf8          = B.stderr . return . encodeUtf8 . linesToText . (: [])
 -- * Utils.
 -- $utils
 
+-- | Redefine "Turtle.Format.repr" from "Turtle.Format", because earlier
+-- versions of that 'repr' converts to 'Text' only.
+repr :: (Show a, IsString b) => a -> b
+repr                = fromString . show
+
 -- | Convert between different string-like error types.
 liftEither :: (Show c, IsString e, MonadError e m) => Either c a -> m a
-liftEither          = either (throwError . fromString . show) return
+liftEither          = either (throwError . repr) return
 
 -- | Lift 'Maybe' into 'MonadError'.
 liftMaybe :: (IsString e, MonadError e m) => Maybe a -> m a
