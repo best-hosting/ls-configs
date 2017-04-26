@@ -32,7 +32,7 @@ loadDb :: (MonadError e m, IsString e, MonadIO m) =>
 loadDb etc mf       = flip catchError def $ do
     db <- liftMaybe mf
     b  <- testfile db
-    if (not b)
+    if not b
       then throwError "Db file does not exist."
       else do
         xs <- liftIO (B.readFile (F.encodeString db)) >>= liftMaybe . decode

@@ -44,8 +44,8 @@ parseMd5            = fmap Md5 $ skipSpace *> do
 parseLoaded :: Parser (Hash Loaded)
 parseLoaded         =
     (   Stored   <$> parseMd5 <* endOfInput
-    <|> Obsolete <$> parseMd5 <* parseString "obsolete"     <* endOfInput
-    <|> (const Newconffile)  <$> parseString "newconffile"  <* endOfInput
+    <|> Obsolete <$> parseMd5 <* parseString "obsolete" <* endOfInput
+    <|> const Newconffile <$> parseString "newconffile" <* endOfInput
     ) <|> fail "Can't parse '${Conffiles}' hash value."
 
 -- | Parse computed hash (e.g. from @md5sum@ utility).

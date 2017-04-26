@@ -50,16 +50,13 @@ targetFilterOpts :: Parser (CInfo -> Bool)
 targetFilterOpts    =
         flag' (cmpBy (==))
             (  long "target-equal"
-            <> help
-                    ("Show source files, which are the same in target."))
+            <> help "Show source files, which are the same in target.")
     <|> flag' (fromMaybe False <$> cmpBy (liftA2 (/=)))
             (  long "target-differ"
-            <> help
-                    ("Show source files differing from target ones."))
+            <> help "Show source files differing from target ones.")
     <|> flag' (isNothing . viewA targetFileHash)
             (  long "target-missed"
-            <> help
-                    ("Show source files missed in target."))
+            <> help "Show source files missed in target.")
     <|> pure (fromMaybe True <$> cmpBy (liftA2 (/=)))
   where
     cmpBy :: (Maybe (Hash Computed) -> Maybe (Hash Computed) -> b)
@@ -148,13 +145,13 @@ fileTypeOpts        = maybe (const True) (fmap getAny) . foldr mappend mempty
 
 packageOpts :: Parser (Package -> Bool)
 packageOpts         = liftA2 (&&)
-    <$> (pkgF    <$> ((some $ option readParser
+    <$> (pkgF    <$> (some (option readParser
             (  long "package"
             <> metavar "PACKAGE"
             <> help ("Filter `dpkg-query` output by package name "
                          ++ " (exact match only).")))
         <|> pure [A.takeText]))   -- This 'pure' is at 'Parser' level.
-    <*> (statusF <$> ((some $ option readParser
+    <*> (statusF <$> (some (option readParser
             (  long "status"
             <> metavar "STATUS"
             <> help ("Filter `dpkg-query` output by package install status"
@@ -175,18 +172,17 @@ opts                = Config
     <$> (   flag' (Right <$> stdin)
                 (  long "stdin"
                 <> help "Read `dpkg-query` output from stdin.")
-            <|> fmap Right . input . fromString <$> strOption
+        <|> fmap Right . input . fromString <$> strOption
                 (  long "file"
                 <> metavar "FILE"
                 <> help "Read `dpkg-query` output from file.")
-            <|> pure systemConfsWithPkg
+        <|> pure systemConfsWithPkg
         )
-    <*> (   option (eitherReader readFilePath)
+    <*> option (eitherReader readFilePath)
                 (  long "db"
                 <> value Nothing
                 <> metavar "FILE"
                 <> help "Store db to file.")
-        )
     <*> (fromMaybe "/etc/"
             <$> option (eitherReader readFilePath)
                 (  long "source"
@@ -194,22 +190,22 @@ opts                = Config
                 <> metavar "DIR"
                 <> help "Path to directory, where `/etc` is.")
         )
-    <*> (option (eitherReader readFilePath)
+    <*> option (eitherReader readFilePath)
             (  long "target"
             <> value Nothing
             <> metavar "DIR"
-            <> help ("Directory to compare source files with.")))
+            <> help "Directory to compare source files with.")
     <*> hashesListOpts
     <*> hashFilterOpts
     <*> fileTypeOpts
-    <*> (option (eitherReader readFilePath)
+    <*> option (eitherReader readFilePath)
             (  long "filter"
             <> value Nothing
             <> metavar "FILE"
             <> help
                 (   "Exclude filter file."
                 ++  " Pathes must match *exactly* "
-                ++  " and must be relative to source path.")))
+                ++  " and must be relative to source path."))
     <*> packageOpts
     <*> targetFilterOpts
   where
@@ -221,7 +217,7 @@ excludeFiles :: Maybe FilePath -> P (CInfo -> Bool)
 excludeFiles mf     = flip catchError def $ do
     f <- liftMaybe mf
     b <- testfile f
-    if (not b)
+    if not b
       then throwError "Exclude file does not exist."
       else fold (readExcludes f) (Fold mappend mempty (fmap getAll))
   where

@@ -66,8 +66,8 @@ work Config { dpkgOutput        = dpkg
     pf          = getAny .  getConst . modifyAA package (Const . Any . pkf)
 
 main_3 :: IO ()
-main_3              = runP $ do
-    join . liftIO . execParser
+main_3              = runP . join . liftIO
+    . execParser
         $ info (work <$> (helper <*> opts))
         (  fullDesc
         <> header "List changed config files."

@@ -67,7 +67,7 @@ newtype Md5         = Md5 {fromMd5 :: Text}
   deriving (Show, Eq)
 -- | Lens from 'Md5' to 'Text'.
 md5 :: LensA Md5 Text
-md5 f z@(Md5 {fromMd5 = x})
+md5 f z@Md5 {fromMd5 = x}
                     = fmap (\x' -> z{fromMd5 = x'}) (f x)
 
 instance FromJSON Md5 where
@@ -112,16 +112,16 @@ instance ToJSON (Hash Computed) where
 
 -- | Lens to hash value computed by us.
 computedH :: LensA (Hash Computed) Md5
-computedH f z@(Computed {_computedH = x})
+computedH f z@Computed {_computedH = x}
                     = fmap (\x' -> z{_computedH = x'}) (f x)
 -- | Lens to hash value read from @dpkg-query@.
 storedH :: LensA (Hash Loaded) Md5
-storedH f z@(Stored {_storedH = x})
+storedH f z@Stored {_storedH = x}
                     = fmap (\x' -> z{_storedH = x'}) (f x)
 storedH _ z         = pure z
 -- | Lens to hash value marked as @obsolete@ in @dpkg-query@ output.
 obsoleteH :: LensA (Hash Loaded) Md5
-obsoleteH f z@(Obsolete {_obsoleteH = x})
+obsoleteH f z@Obsolete {_obsoleteH = x}
                     = fmap (\x' -> z{_obsoleteH = x'}) (f x)
 obsoleteH _ z       = pure z
 -- | Lens to @newconffile@ string in @dpkg-query@ output.
@@ -153,10 +153,10 @@ instance ToJSON Package where
                              ]
 
 pkgName :: LensA Package (Maybe Text)
-pkgName f z@(Package {_pkgName = x})
+pkgName f z@Package {_pkgName = x}
                     = fmap (\x' -> z{_pkgName = x'}) (f x)
 pkgStatus :: LensA Package (Maybe Text)
-pkgStatus f z@(Package {_pkgStatus = x})
+pkgStatus f z@Package {_pkgStatus = x}
                     = fmap (\x' -> z{_pkgStatus = x'}) (f x)
 
 -- | Config file info.
@@ -213,24 +213,24 @@ defFileInfo         = FileInfo
                         }
 
 filePath :: LensA CInfo FilePath
-filePath f z@(FileInfo {_filePath = x})
+filePath f z@FileInfo {_filePath = x}
                     = fmap (\x' -> z{_filePath = x'}) (f x)
 -- | Lens from 'CInfo' to 'Computed' file hash.
 fileHash :: LensA CInfo (Maybe (Hash Computed))
-fileHash f z@(FileInfo {_fileHash = x})
+fileHash f z@FileInfo {_fileHash = x}
                     = fmap (\x' -> z{_fileHash = x'}) (f x)
 targetFileHash :: LensA CInfo (Maybe (Hash Computed))
-targetFileHash f z@(FileInfo {_targetFileHash = x})
+targetFileHash f z@FileInfo {_targetFileHash = x}
                     = fmap (\x' -> z{_targetFileHash = x'}) (f x)
 -- | Lens from 'CInfo' to 'Loaded' file hashes.
 loadedHashes :: LensA CInfo [Hash Loaded]
-loadedHashes f z@(FileInfo {_loadedHashes = x})
+loadedHashes f z@FileInfo {_loadedHashes = x}
                     = fmap (\x' -> z{_loadedHashes = x'}) (f x)
 symLinkTargets :: LensA CInfo (M.Map Int FilePath)
-symLinkTargets f z@(FileInfo {_symLinkTargets = x})
+symLinkTargets f z@FileInfo {_symLinkTargets = x}
                     = fmap (\x' -> z{_symLinkTargets = x'}) (f x)
 package :: LensA CInfo Package
-package f z@(FileInfo {_package = x})
+package f z@FileInfo {_package = x}
                     = fmap (\x' -> z{_package = x'}) (f x)
 
 isFileInfo :: CInfo -> Bool
@@ -255,13 +255,13 @@ newconffile        = loadedHashes . listL . newconffileH
 allStored :: CInfo -> [Md5]
 allStored x         = fromMaybe [] $ do
     ts <- viewAmaybe loadedHashes x
-    return . catMaybes . map (viewAmaybe storedH) $ ts
+    return . mapMaybe (viewAmaybe storedH) $ ts
 
 -- | All obsolete 'Md5' hashes in 'CInfo'.
 allObsolete :: CInfo -> [Md5]
 allObsolete x       = fromMaybe [] $ do
     ts <- viewAmaybe loadedHashes x
-    return . catMaybes . map (viewAmaybe obsoleteH) $ ts
+    return . mapMaybe (viewAmaybe obsoleteH) $ ts
 
 -- | Map for storing information about configs.
 type ConfMap        = M.Map Key CInfo
