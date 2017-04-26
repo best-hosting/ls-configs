@@ -24,6 +24,7 @@ import Sgf.System.Configs.System
 saveDb :: Maybe F.FilePath -> ConfMap -> P ()
 saveDb mf xm        = flip catchError (const (return ())) $ do
     db <- liftMaybe mf
+    mktree (F.directory db)
     liftIO . B.writeFile (F.encodeString db) . encode . M.elems $ xm
 
 -- | Load db from json.
@@ -33,7 +34,8 @@ loadDb etc mf       = flip catchError def $ do
     db <- liftMaybe mf
     b  <- testfile db
     if not b
-      then throwError "Db file does not exist."
+      then throwError . repr
+                $ "Db file '" ++ F.encodeString db ++ "' does not exist."
       else do
         xs <- liftIO (B.readFile (F.encodeString db)) >>= liftMaybe . decode
         return $ M.fromList . map (\x -> (getKey x, x)) $ xs

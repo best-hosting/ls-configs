@@ -20,7 +20,7 @@ import qualified Data.Text              as T
 import           Turtle.Prelude
 import           Turtle.Shell
 import           Turtle.Line
-import           Filesystem.Path.CurrentOS (FilePath, fromText)
+import           Filesystem.Path.CurrentOS (FilePath, fromText, encodeString)
 import           Control.Monad.Except
 import           Control.Foldl (Fold (..))
 
@@ -218,7 +218,8 @@ excludeFiles mf     = flip catchError def $ do
     f <- liftMaybe mf
     b <- testfile f
     if not b
-      then throwError "Exclude file does not exist."
+      then throwError . repr
+                $ "Exclude file '" ++ encodeString f ++ "' does not exist."
       else fold (readExcludes f) (Fold mappend mempty (fmap getAll))
   where
     def :: MonadError e m => e -> m (CInfo -> Bool)
