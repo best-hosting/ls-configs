@@ -1,0 +1,5 @@
+.stack-work/
+*.tmp
+[0-9].txt
+tmp/
+test/test.db

@@ -1,6 +1,6 @@
 
-import Lib
+import Sgf.System.Configs
 
 main :: IO ()
-main                = runP main_
+main                = main_
 
