@@ -48,20 +48,16 @@ module Sgf.System.Configs.Types
     )
   where
 
-import Prelude      hiding (FilePath)
-import Data.Text    hiding (map)
-import Data.Text.Encoding
-import Data.Aeson
-import Data.Maybe
-import qualified Data.Map.Strict            as M
-import Filesystem.Path.CurrentOS
-import Control.Applicative
-import Control.Foldl (Fold(..))
-import Control.Monad.Except
-
-import Turtle.Shell
-import Turtle.Line
-import Turtle.Prelude
+import           Prelude            hiding (FilePath)
+import           Data.Text          hiding (map)
+import           Data.Aeson
+import           Data.Maybe
+import qualified Data.Map.Strict    as M
+import           Filesystem.Path.CurrentOS
+import           Control.Applicative
+import           Control.Monad.Except
+import           Turtle.Shell
+import           Turtle.Line
 
 import Sgf.Control.Lens
 

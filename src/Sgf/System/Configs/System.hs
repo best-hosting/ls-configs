@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE OverloadedStrings      #-}
 {-# LANGUAGE RankNTypes             #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
 {-# LANGUAGE TupleSections          #-}
@@ -14,18 +14,18 @@ module Sgf.System.Configs.System
     )
   where
 
-import Prelude hiding (FilePath)
-import Data.String
+import           Prelude                    hiding (FilePath)
+import           Data.String
 import qualified Data.Map.Strict            as M
-import Turtle.Shell
-import Turtle.Line
-import Control.Applicative
-import Control.Monad.Except
-import qualified Data.Text as T
-import qualified System.Posix.Files as F
-import Filesystem.Path.CurrentOS hiding (empty)
-import Turtle.Prelude
-import Control.Foldl
+import           Turtle.Shell
+import           Turtle.Line
+import           Control.Applicative
+import           Control.Monad.Except
+import qualified Data.Text                  as T
+import qualified System.Posix.Files         as F
+import           Filesystem.Path.CurrentOS  hiding (empty)
+import           Turtle.Prelude
+import           Control.Foldl
 
 import Sgf.Control.Lens
 import Sgf.System.Configs.Types
@@ -39,16 +39,17 @@ loadDpkg :: MonadIO m =>
             -> Shell (Either Line Line) -- ^ Input.
             -> ConfMap                  -- ^ Add parsed values here.
             -> m ConfMap
-loadDpkg etc s z    = foldIO s $ FoldM (\z ml -> runIO (liftEither ml >>= go z))
-                                   (return (mempty, z))
+loadDpkg etc s z0   = foldIO s $ FoldM (\z ml -> runIO (liftEither ml >>= go z))
+                                   (return (mempty, z0))
                                    (return . snd)
   where
     go :: (IsString e, MonadIO m, MonadError e m, Alternative m) =>
           (Package, ConfMap) -> Line -> m (Package, ConfMap)
     go (pkg, zm) y
       | y == ""     = return (pkg, zm)
-      | otherwise   =     parse ((pkg, ) . flip adj zm  <$> parseConffile) y
-                      <|> parse (                (, zm) <$> parsePackage)  y
+      | otherwise   =
+                parseLine ((pkg, ) . flip adj zm  <$> parseConffile) y
+            <|> parseLine (                (, zm) <$> parsePackage)  y
       where
         -- | `dpkg` output should always contain configs in `/etc`, so
         -- hardcode it here.
@@ -101,7 +102,7 @@ readSymbolicLink xf = do
 
 -- | Add all files from `/etc` to db.
 readEtc :: MonadIO m => FilePath -> Shell FilePath -> ConfMap -> m ConfMap
-readEtc etc x z     = foldIO x (FoldM go (return z) return)
+readEtc etc x z0    = foldIO x (FoldM go (return z0) return)
   where
     go :: MonadIO m => ConfMap -> FilePath -> m ConfMap
     go z xf         = do

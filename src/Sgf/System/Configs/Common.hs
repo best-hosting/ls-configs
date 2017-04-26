@@ -1,6 +1,5 @@
 {-# LANGUAGE OverloadedStrings      #-}
 {-# LANGUAGE RankNTypes             #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
 {-# LANGUAGE FlexibleContexts       #-}
 
 module Sgf.System.Configs.Common
@@ -16,18 +15,16 @@ module Sgf.System.Configs.Common
     )
   where
 
-import Prelude hiding (FilePath)
-import Data.String
-import qualified Data.Map.Strict            as M
-import Control.Applicative
-import Turtle.Prelude
-import Turtle.Shell
-import Turtle.Line
-import qualified Turtle.Bytes as B
-import Filesystem.Path.CurrentOS (FilePath)
-import Control.Monad.Except
-import Data.Text.Encoding
-import Control.Foldl (Fold(..))
+import           Prelude                hiding (FilePath)
+import           Data.String
+import           Control.Applicative
+import           Turtle.Prelude
+import           Turtle.Shell
+import           Turtle.Line
+import qualified Turtle.Bytes           as B
+import           Control.Monad.Except
+import           Data.Text.Encoding
+import           Control.Foldl          (Fold(..))
 
 import Sgf.Control.Lens
 import Sgf.System.Configs.Types
