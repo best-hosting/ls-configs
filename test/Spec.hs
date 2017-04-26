@@ -11,8 +11,8 @@ main                = do
             , "-w"
             , T.pack $ "./.stack-work/dist/"
                 ++ arch
-                ++ "-linux/Cabal-1.24.2.0/build/list-changed-configs-exe/list-changed-configs-exe"
-            , "test/list-changed-configs.test"
+                ++ "-linux/Cabal-1.24.2.0/build/ls-configs-exe/ls-configs-exe"
+            , "test/ls-configs.test"
             ]
             mempty
     exit r
