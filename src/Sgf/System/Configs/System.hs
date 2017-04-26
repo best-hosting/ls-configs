@@ -124,7 +124,7 @@ systemConfs         = inprocWithErr "dpkg-query" ["-W", "-f=${Conffiles}\\n"] em
 systemConfsWithPkg :: Shell (Either Line Line)
 systemConfsWithPkg  = inprocWithErr "dpkg-query"
                         [ "-W"
-                        , "-f=${Package} ${Status}\n${Conffiles}\\n"
+                        , "-f=${Package} ${Status}\n${Conffiles}\n"
                         ] empty
 
 -- | Replace path prefix @old@ (starting and ending at path component
